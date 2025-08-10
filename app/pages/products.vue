@@ -1,0 +1,29 @@
+<script lang="ts" setup>
+definePageMeta({
+  name: "Products",
+});
+</script>
+
+<template>
+  <div class="flex flex-col gap-4">
+    <a-page-header
+      class="bg-white shadow-md"
+      style="border: 1px solid rgb(235, 237, 240)"
+    >
+      <template #title>
+        <span class="text-lg font-bold"><BarcodeOutlined /> Productos</span>
+      </template>
+      <template #subTitle>
+        <AddProductButton class="inline-block" />
+      </template>
+
+      <template #extra>
+        <!-- <AddCategoryProductButton /> -->
+      </template>
+    </a-page-header>
+
+    <a-card class="shadow-md">
+      <ProductsTable />
+    </a-card>
+  </div>
+</template>
