@@ -8,6 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "lint": "eslint . --ext .ts,.vue,.tsx",
+    "lint:fix": "eslint . --ext .ts,.vue,.tsx --fix",
     "format": "prettier --check --ignore-path .gitignore .",
     "format:fix": "prettier --write --ignore-path .gitignore .",
     "emulator": "firebase emulators:start --import=./offline-seed --export-on-exit"

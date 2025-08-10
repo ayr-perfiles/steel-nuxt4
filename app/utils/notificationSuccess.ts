@@ -4,5 +4,5 @@ export default (message: any) => {
     description: message,
     placement: "bottomRight",
     duration: 4,
-  })
-}
+  });
+};
