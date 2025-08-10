@@ -57,10 +57,13 @@ const handleOk = () => {
         } else {
           await addCustomer(_.cloneDeep(formState as ICustomer));
         }
-        // notificationSuccess(`Customero ${props.customer ? "editado" : "creado"}`);
+
+        notificationSuccess(`Se añadió`);
+        emit("onClose");
+        console.log("finish!");
         emit("onClose");
       } catch (error: any) {
-        // modalError(error.message);
+        modalError(error.message);
       } finally {
         loading.value = false;
       }

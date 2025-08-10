@@ -25,6 +25,7 @@ const formState = reactive<Partial<ICoil>>({
   thickness: 0.45,
   density: 7.85,
   status: EStatusCoil.process,
+  isCutting: false,
 });
 
 onMounted(() => {
@@ -85,10 +86,11 @@ const handleOk = () => {
         } else {
           await addCoil(_.cloneDeep(formState as ICoil));
         }
-        // notificationSuccess(`Coilo ${props.coil ? "editado" : "creado"}`);
+        notificationSuccess(`Se añadió`);
         emit("onClose");
+        console.log("finish!");
       } catch (error: any) {
-        // modalError(error.message);
+        modalError(error.message);
       } finally {
         loading.value = false;
       }
