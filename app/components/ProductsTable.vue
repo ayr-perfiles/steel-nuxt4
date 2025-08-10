@@ -68,7 +68,7 @@ const columns: TableProps["columns"] = [
     // },
   },
   {
-    title: "ANCHO",
+    title: "ANCHO (mm)",
     key: "width",
     dataIndex: "width",
     width: "100px",
@@ -87,7 +87,10 @@ const columns: TableProps["columns"] = [
     key: "price",
     dataIndex: "price",
     width: "100px",
-    align: "center",
+    align: "right",
+    customRender: ({ value }) => {
+      return currency(value, "", 4);
+    },
   },
   {
     title: "",

@@ -17,6 +17,7 @@ export interface ICoil extends IAudit {
   total: number;
   density: number;
   status: EStatusCoil;
+  isCutting: boolean;
 }
 
 // for movements
@@ -34,6 +35,7 @@ export const coilConverter = {
       total: coil.total,
       density: coil.density,
       status: coil.status,
+      isCutting: coil.isCutting,
       createdAt: coil.createdAt,
       updatedAt: coil.updatedAt || null,
     };

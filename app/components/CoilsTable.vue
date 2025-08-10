@@ -85,38 +85,42 @@ const columns: TableProps["columns"] = [
     dataIndex: "serie",
     sorter: (a: any, b: any) =>
       (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
-    // customRender: ({ value, record }) => {
-    //   return value + ' - ' + (record.waterOutlet === EWaterOutlet.spout ? 'CAÑO' : 'NORMAL')
-    // },
+    customRender: ({ value, record }) => {
+      return `${value} ${record.isCutting ? " | Cortado" : ""}`;
+    },
   },
   {
-    title: "ANCHO",
+    title: "ANCHO (mm)",
     key: "width",
     dataIndex: "width",
     width: "100px",
-    align: "center",
   },
 
   {
-    title: "PESO KG",
+    title: "PESO (kg)",
     key: "weight",
     dataIndex: "weight",
     width: "100px",
-    align: "center",
   },
   {
-    title: "PRECIO POR KG",
+    title: "PRECIO POR (kg)",
     key: "price",
     dataIndex: "price",
-    width: "100px",
-    align: "center",
+    width: "120px",
+    align: "right",
+    customRender: ({ value }) => {
+      return currency(value, "", 4);
+    },
   },
   {
-    title: "TOTAL",
+    title: "PRECIO TOTAL (S/)",
     key: "total",
     dataIndex: "total",
-    width: "100px",
-    align: "center",
+    width: "120px",
+    align: "right",
+    customRender: ({ value }) => {
+      return currency(value, "");
+    },
   },
   {
     title: "ESTADO",
@@ -124,11 +128,14 @@ const columns: TableProps["columns"] = [
     dataIndex: "status",
     width: "100px",
     align: "center",
+    customRender: ({ value }) => {
+      return getStatusCoil(value);
+    },
   },
   {
     title: "",
     key: "action",
-    width: "110px",
+    width: "120px",
     align: "center",
   },
 ];
@@ -157,7 +164,18 @@ const columns: TableProps["columns"] = [
             </a-button>
           </template> -->
 
-          <a @click.prevent="handleOpenRolling(record)"> Rolado </a>
+          <!-- <a
+            @click.prevent="handleOpenRolling(record)"
+            :disabled="!record.isCutting"
+          >
+            Rolar
+          </a> -->
+          <a-button
+            type="link"
+            :disabled="!record.isCutting"
+            @click="handleOpenRolling(record)"
+            >Rolar</a-button
+          >
           <a-divider type="vertical"></a-divider>
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
             <a class="ant-dropdown-link" @click.prevent>
@@ -166,8 +184,8 @@ const columns: TableProps["columns"] = [
             </a>
             <template #overlay>
               <a-menu>
-                <a-menu-item>
-                  <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
+                <a-menu-item :disabled="record.isCutting">
+                  <a @click="handleOpenCuttingPlan(record)"> Plan de corte </a>
                 </a-menu-item>
 
                 <a-menu-item>

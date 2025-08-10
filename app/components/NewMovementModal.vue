@@ -41,9 +41,12 @@ const handleOk = async () => {
             })
         )
       );
+
+      notificationSuccess(`Se añadió`);
+      emit("onClose");
       console.log("finish!");
     } catch (error) {
-      console.log(error);
+      modalError(error.message);
     } finally {
       loading.value = false;
     }
@@ -60,7 +63,7 @@ watchEffect(() => {
           serie: props.coil.serie,
         },
         product: {
-          id: item.id,
+          id: item.product.id,
           name: item.product.name,
           width: item.product.width,
         },
@@ -102,8 +105,10 @@ const columns: TableProps["columns"] = [
     title: "PRODUCTO",
     key: "product",
     dataIndex: "product",
+    defaultSortOrder: "descend",
     sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+      (a.product.name as string).charCodeAt(0) -
+      (b.product.name as string).charCodeAt(0),
     customRender: ({ value }) => {
       return `${value.name}`;
     },
@@ -140,14 +145,20 @@ const columns: TableProps["columns"] = [
         <span>No hay cortes</span>
       </template>
       <template v-else>
-        <p>Bobina serie: {{ coil.serie }}</p>
+        <a-form>
+          <a-form-item>
+            <p>Bobina serie: {{ coil.serie }}</p>
+          </a-form-item>
 
-        <a-date-picker
-          v-model:value="value1"
-          format="DD-MM-YYYY HH:mm:ss"
-          :disabled-date="disabledDate"
-          :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
-        />
+          <a-form-item>
+            <a-date-picker
+              v-model:value="value1"
+              format="DD-MM-YYYY HH:mm:ss"
+              :disabled-date="disabledDate"
+              :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
+            />
+          </a-form-item>
+        </a-form>
 
         <a-table
           :row-key="(item: IMovement) => item.product.id"

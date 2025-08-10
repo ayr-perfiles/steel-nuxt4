@@ -121,9 +121,11 @@ const handleOk = async () => {
     try {
       loading.value = true;
       await addAllStrips(_.cloneDeep(strips.filter((item) => item.quantity)));
+      notificationSuccess(`Se añadió`);
+      emit("onClose");
       console.log("finish!");
     } catch (error) {
-      console.log(error);
+      modalError(error.message);
     } finally {
       loading.value = false;
     }
@@ -156,8 +158,10 @@ const columns: TableProps["columns"] = [
     title: "PRODUCTO",
     key: "product",
     dataIndex: "product",
+    defaultSortOrder: "descend",
     sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+      (a.product.name as string).charCodeAt(0) -
+      (b.product.name as string).charCodeAt(0),
     customRender: ({ value }) => {
       return `${value.name}`;
     },
@@ -177,9 +181,13 @@ const columns: TableProps["columns"] = [
     align: "center",
     customRender: ({ record }) =>
       record.quantity
-        ? (props.coil.weight / (props.coil.width / 1000)) *
-          (record.product.width / 1000) *
-          record.quantity
+        ? currency(
+            (props.coil.weight / (props.coil.width / 1000)) *
+              (record.product.width / 1000) *
+              record.quantity,
+            "",
+            4
+          )
         : "-",
   },
   {
@@ -188,6 +196,9 @@ const columns: TableProps["columns"] = [
     dataIndex: "price",
     width: "100px",
     align: "center",
+    customRender: ({ value }) => {
+      return currency(value, "", 4);
+    },
   },
 ];
 </script>
@@ -205,11 +216,19 @@ const columns: TableProps["columns"] = [
         <template #icon>
           <PlusOutlined />
         </template>
-        <span> Plan de corte {{ coil.serie }}</span>
+        <span> Plan de corte</span>
       </a-tag>
     </template>
 
     <a-card>
+      <a-form>
+        <a-form-item>
+          <p>Bobina serie: {{ coil.serie }}</p>
+          <p>Bobina preso: {{ coil.weight }}</p>
+          <p>Peso flejes: {{ currency(calcWeightStripsTotal, "", 4) }}</p>
+        </a-form-item>
+      </a-form>
+
       <a-table
         :row-key="(item: IStrip) => item.product.id"
         :columns="columns"
