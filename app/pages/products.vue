@@ -23,7 +23,7 @@ definePageMeta({
     </a-page-header>
 
     <a-card class="shadow-md">
-      <!-- <ProductsTable :is-modal="false" /> -->
+      <ProductsTable />
     </a-card>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 definePageMeta({
-  name: "Coils",
+  name: "Store",
 });
 </script>
 
@@ -11,10 +11,10 @@ definePageMeta({
       style="border: 1px solid rgb(235, 237, 240)"
     >
       <template #title>
-        <span class="text-lg font-bold"><GroupOutlined /> Bobinas</span>
+        <span class="text-lg font-bold"><GroupOutlined /> Almacén</span>
       </template>
       <template #subTitle>
-        <AddCoilButton class="inline-block" />
+        <!-- <AddStoreButton class="inline-block" /> -->
       </template>
 
       <template #extra>
@@ -23,7 +23,7 @@ definePageMeta({
     </a-page-header>
 
     <a-card class="shadow-md">
-      <CoilsTable />
+      <MovementsTable />
     </a-card>
   </div>
 </template>

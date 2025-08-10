@@ -12,20 +12,7 @@ export default defineNuxtConfig({
     "@ant-design-vue/nuxt",
     "dayjs-nuxt",
     "nuxt-vuefire",
-    "nuxt-lodash",
   ],
-
-  lodash: {
-    prefix: "_",
-    // prefixSkip: ["string"],
-    // upperAfterPrefix: false,
-    // exclude: ["map"],
-    // alias: [
-    //   ["camelCase", "stringToCamelCase"], // => stringToCamelCase
-    //   ["kebabCase", "stringToKebab"], // => stringToKebab
-    //   ["isDate", "isLodashDate"], // => _isLodashDate
-    // ],
-  },
 
   vuefire: {
     auth: {

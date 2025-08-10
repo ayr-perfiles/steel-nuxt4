@@ -1,17 +1,17 @@
 <script lang="ts" setup>
-import type { TableProps } from "ant-design-vue"
-import { collection } from "firebase/firestore"
-import { ERole } from "~/enums"
+import type { TableProps } from "ant-design-vue";
+import { collection } from "firebase/firestore";
+import { ERole } from "~/enums";
 
 definePageMeta({
   name: "Users",
-})
+});
 
-const db = useFirestore()
-const usersRef = collection(db, "users")
+const db = useFirestore();
+const usersRef = collection(db, "users");
 const { data: users, pending } = useCollection(usersRef, {
   ssrKey: "users",
-})
+});
 
 // const vouchersRef = collection(db, 'vouchers')
 // const q = query(
@@ -29,19 +29,20 @@ const columns: TableProps["columns"] = [
     key: "item",
     width: "80px",
     align: "center",
-    customRender: ({ index }) => {
-      return _PadStart(`${index + 1}`, 2, "0")
-    },
+    // customRender: ({ index }) => {
+    //   return _PadStart(`${index + 1}`, 2, "0")
+    // },
   },
   {
     title: "ROL",
     dataIndex: "role",
     width: "110px",
     defaultSortOrder: "ascend",
-    sorter: (a: any, b: any) => (a.role as string).charCodeAt(0) - (b.role as string).charCodeAt(0),
-    customRender: ({ value }) => {
-      return getRole(value)
-    },
+    sorter: (a: any, b: any) =>
+      (a.role as string).charCodeAt(0) - (b.role as string).charCodeAt(0),
+    // customRender: ({ value }) => {
+    //   return getRole(value)
+    // },
   },
   {
     title: "EMAIL",
@@ -51,7 +52,8 @@ const columns: TableProps["columns"] = [
   {
     title: "NOMBRE",
     dataIndex: "name",
-    sorter: (a: any, b: any) => (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+    sorter: (a: any, b: any) =>
+      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
   },
   {
     title: "ACTIVO",
@@ -59,7 +61,7 @@ const columns: TableProps["columns"] = [
     width: "110px",
     align: "center",
     customRender: ({ value }) => {
-      return value ? "Sí" : "No"
+      return value ? "Sí" : "No";
     },
   },
 
@@ -74,12 +76,15 @@ const columns: TableProps["columns"] = [
     width: "120px",
     align: "center",
   },
-]
+];
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <a-page-header class="bg-white shadow-md" style="border: 1px solid rgb(235, 237, 240)">
+    <a-page-header
+      class="bg-white shadow-md"
+      style="border: 1px solid rgb(235, 237, 240)"
+    >
       <template #title>
         <span class="text-lg font-bold"><TeamOutlined /> Usuarios</span>
       </template>
@@ -89,7 +94,13 @@ const columns: TableProps["columns"] = [
     </a-page-header>
 
     <a-card class="shadow-md">
-      <a-table :columns="columns" :data-source="users" :pagination="false" :loading="pending" bordered>
+      <a-table
+        :columns="columns"
+        :data-source="users"
+        :pagination="false"
+        :loading="pending"
+        bordered
+      >
         <template #bodyCell="{ column, index, value, record }">
           <template v-if="column.key === 'test'">
             <span>{{ index }}</span>
@@ -117,7 +128,10 @@ const columns: TableProps["columns"] = [
           </template>
 
           <template v-else-if="column.key === 'action'">
-            <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
+            <a-dropdown
+              placement="bottomRight"
+              :arrow="{ pointAtCenter: true }"
+            >
               <a class="ant-dropdown-link" @click.prevent>
                 Más
                 <DownOutlined />

@@ -1,10 +1,13 @@
 import {
   QueryDocumentSnapshot,
+  Timestamp,
   type DocumentData,
   type SnapshotOptions,
 } from "firebase/firestore";
+import type { IAudit } from "./audit";
+import type { EStatusCoil } from "~/enums";
 
-export interface ICoil {
+export interface ICoil extends IAudit {
   id: string;
   serie: string;
   width: number;
@@ -12,24 +15,13 @@ export interface ICoil {
   weight: number;
   price: number;
   total: number;
+  density: number;
+  status: EStatusCoil;
 }
 
 // for movements
-export interface ICoilMovement
-  extends Pick<ICoil, "id" | "serie" | "weight" | "price"> {}
+export interface ICoilMovement extends Pick<ICoil, "id" | "serie"> {}
 // end
-
-export class Coil implements Omit<ICoil, "id"> {
-  serie: string;
-  weight: number;
-  price: number;
-
-  constructor(serie: string, weight: number, price: number) {
-    this.serie = serie;
-    this.weight = weight;
-    this.price = price;
-  }
-}
 
 export const coilConverter = {
   toFirestore: (coil: ICoil) => {
@@ -37,6 +29,13 @@ export const coilConverter = {
       serie: coil.serie,
       weight: coil.weight,
       price: coil.price,
+      width: coil.width,
+      thickness: coil.thickness,
+      total: coil.total,
+      density: coil.density,
+      status: coil.status,
+      createdAt: coil.createdAt,
+      updatedAt: coil.updatedAt || null,
     };
   },
 
@@ -46,6 +45,8 @@ export const coilConverter = {
   ) => {
     const data = snapshot.data(options);
     data.id = snapshot.id;
+    data.createdAt = (data.createdAt as Timestamp)?.toDate();
+    data.updatedAt = (data.updatedAt as Timestamp)?.toDate();
     return data;
   },
 };

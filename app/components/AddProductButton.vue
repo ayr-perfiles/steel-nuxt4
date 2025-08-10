@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { ETypeProduct } from "~/enums";
-
 const open = ref(false);
 </script>
 
@@ -11,11 +9,6 @@ const open = ref(false);
       Añadir producto
     </a-button>
 
-    <NewProductModal
-      v-if="open"
-      :open="open"
-      :type="ETypeProduct.product"
-      @on-close="open = false"
-    />
+    <NewProductModal v-if="open" :open="open" @on-close="open = false" />
   </div>
 </template>

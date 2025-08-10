@@ -10,6 +10,7 @@ import {
   FileDoneOutlined,
   GlobalOutlined,
   GoldFilled,
+  GroupOutlined,
   StockOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -57,7 +58,7 @@ const items: ItemType[] = reactive([
   { type: "divider" },
 
   getItem("Lista de productos", "Products", () => h(BarcodeOutlined)),
-  getItem("Lista de bobinas", "Coils", () => h(BarcodeOutlined)),
+  getItem("Lista de bobinas", "Coils", () => h(GroupOutlined)),
   // getItem("Envases", "Envases", () => h(GoldFilled)),
   // getItem("Marcas", "Brands", () => h(TagsOutlined)),
 

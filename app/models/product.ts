@@ -1,43 +1,38 @@
-import { QueryDocumentSnapshot, type DocumentData, type SnapshotOptions } from "firebase/firestore"
+import {
+  QueryDocumentSnapshot,
+  type DocumentData,
+  type SnapshotOptions,
+} from "firebase/firestore";
 
 export interface IProduct {
-  id: string
-  name: string
-  weight: number
-  stock: number
+  id: string;
+  name: string;
+  width: number;
+  stock: number;
+  price: number;
 }
 
 // for movements
-export interface IProductMovement extends Pick<IProduct, "id" | "name" | "weight"> {}
+export interface IProductMovement
+  extends Pick<IProduct, "id" | "name" | "width"> {}
 // end
-
-export class Product implements Omit<IProduct, "id"> {
-  name: string
-  weight: number
-  stock: number
-
-  constructor(name: string, weight: number, stock: number) {
-    this.name = name
-    this.weight = weight
-    this.stock = stock
-  }
-}
 
 export const productConverter = {
   toFirestore: (product: IProduct) => {
     return {
       name: product.name,
-      weight: product.weight,
+      width: product.width,
       stock: product.stock,
-    }
+      price: product.price || null,
+    };
   },
 
   fromFirestore: (
     snapshot: QueryDocumentSnapshot<IProduct, DocumentData>,
-    options: SnapshotOptions,
+    options: SnapshotOptions
   ) => {
-    const data = snapshot.data(options)
-    data.id = snapshot.id
-    return data
+    const data = snapshot.data(options);
+    data.id = snapshot.id;
+    return data;
   },
-}
+};
