@@ -30,6 +30,17 @@ export default defineNuxtConfig({
     },
   },
 
+  tailwindcss: {
+    // Options
+    config: {
+      important: true,
+      darkMode: "class",
+      corePlugins: {
+        preflight: false,
+      },
+    },
+  },
+
   antd: {
     extractStyle: true,
   },
@@ -39,5 +50,18 @@ export default defineNuxtConfig({
     plugins: ["relativeTime", "utc", "timezone", "isBetween"],
     defaultLocale: "es",
     defaultTimezone: "America/Lima",
+  },
+
+  css: ["ant-design-vue/dist/reset.css"],
+
+  vite: {
+    resolve: {
+      alias: {
+        "ant-design-vue/dist": "ant-design-vue/dist",
+        "ant-design-vue/es": "ant-design-vue/es",
+        "ant-design-vue/lib": "ant-design-vue/es",
+        "ant-design-vue": "ant-design-vue/es",
+      },
+    },
   },
 });

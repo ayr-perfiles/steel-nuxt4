@@ -124,7 +124,7 @@ const handleOk = async () => {
       notificationSuccess(`Se añadió`);
       emit("onClose");
       console.log("finish!");
-    } catch (error) {
+    } catch (error: any) {
       modalError(error.message);
     } finally {
       loading.value = false;
