@@ -19,6 +19,7 @@ const dayjs = useDayjs();
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openRolling = ref(false);
+const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
 const { data: coils, pending, remove } = useCrudCoils();
@@ -49,6 +50,11 @@ const handleOpenCuttingPlan = (coilSelected: any) => {
 
 const handleOpenRolling = (coilSelected: any) => {
   openRolling.value = true;
+  coil.value = coilSelected;
+};
+
+const handleInfoCoil = (coilSelected: any) => {
+  openInfoCoil.value = true;
   coil.value = coilSelected;
 };
 
@@ -163,7 +169,9 @@ const columns: TableProps["columns"] = [
         </template>
 
         <template v-else-if="column.dataIndex === 'serie'">
-          <a v-if="record.isCutting">{{ text }} <InfoCircleOutlined /></a>
+          <a v-if="record.isCutting" @click="handleInfoCoil(record)"
+            >{{ text }} <InfoCircleOutlined
+          /></a>
           <span v-else>{{ text }}</span>
         </template>
 
@@ -212,6 +220,13 @@ const columns: TableProps["columns"] = [
       :coil="coil"
       :open="openRolling"
       @on-close="openRolling = false"
+    />
+
+    <CoilInfoModal
+      v-if="openInfoCoil && coil"
+      :coil="coil"
+      :open="openInfoCoil"
+      @on-close="openInfoCoil = false"
     />
   </div>
 </template>

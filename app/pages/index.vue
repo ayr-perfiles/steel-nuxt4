@@ -11,7 +11,7 @@ definePageMeta({
       style="border: 1px solid rgb(235, 237, 240)"
     >
       <template #title>
-        <span class="text-lg font-bold"><GroupOutlined /> Dashboard</span>
+        <span class="text-lg font-bold"><BarChartOutlined /> Dashboard</span>
       </template>
       <template #subTitle>
         <!-- <AddVoucherButton class="inline-block" /> -->

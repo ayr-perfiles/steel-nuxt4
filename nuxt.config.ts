@@ -31,13 +31,19 @@ export default defineNuxtConfig({
   },
 
   tailwindcss: {
-    // Options
+    // cssPath: "~/assets/css/tailwind.css",
+    viewer: false,
     config: {
       important: true,
       darkMode: "class",
       corePlugins: {
         preflight: false,
       },
+      content: ["./app/**/*.{vue,js,ts}"],
+      theme: {
+        extend: {},
+      },
+      plugins: [],
     },
   },
 

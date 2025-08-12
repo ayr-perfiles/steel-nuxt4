@@ -10,6 +10,7 @@ import { stripConverter, type IStrip } from "~/models/strip";
 
 export const useCrudStrips = (idCoil: string) => {
   const dbClient = useFirestore();
+
   const stripsRef = collection(
     dbClient,
     "coils",
