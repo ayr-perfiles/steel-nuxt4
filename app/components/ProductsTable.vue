@@ -68,7 +68,7 @@ const columns: TableProps["columns"] = [
     // },
   },
   {
-    title: "ANCHO (mm)",
+    title: "ANCHO [mm]",
     key: "width",
     dataIndex: "width",
     width: "100px",
@@ -83,10 +83,10 @@ const columns: TableProps["columns"] = [
     align: "center",
   },
   {
-    title: "COSTO",
+    title: "COSTO PROMEDIO",
     key: "price",
     dataIndex: "price",
-    width: "100px",
+    width: "130px",
     align: "right",
     customRender: ({ value }) => {
       return currency(value, "", 4);

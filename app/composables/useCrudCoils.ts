@@ -10,13 +10,20 @@ import {
 } from "firebase/firestore";
 import { coilConverter, type ICoil } from "~/models/coil";
 
-export const useCrudCoils = () => {
+export const useCrudCoils = (id?: string) => {
   const dbClient = useFirestore();
   const coilsRef = collection(dbClient, "coils").withConverter(coilConverter);
 
   const { data, pending } = useCollection(coilsRef, {
     ssrKey: "coils",
   });
+
+  const { data: repository, pending: pendingRepository } = useDocument(
+    id ? doc(dbClient, "coils", id).withConverter(coilConverter) : null,
+    {
+      ssrKey: "coil",
+    }
+  );
 
   const add = async (coil: ICoil) => {
     await addDoc(coilsRef, {
@@ -37,5 +44,5 @@ export const useCrudCoils = () => {
     await deleteDoc(doc(dbClient, "coils", id));
   };
 
-  return { data, pending, add, update, remove };
+  return { data, pending, repository, pendingRepository, add, update, remove };
 };

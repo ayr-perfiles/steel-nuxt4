@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
+import type { ICoil } from "~/models/coil";
 import type { IMovement } from "~/models/movement";
 
 interface Movement {
@@ -18,7 +19,9 @@ const dayjs = useDayjs();
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openRolling = ref(false);
+const openCoilInfoCurrent = ref(false);
 const movement = ref<IMovement>();
+const coilIdCurrent = ref();
 
 const { data: movements, pending, remove } = useCrudMovements();
 
@@ -57,6 +60,11 @@ const handleSelected = (movement: any) => {
     name: movement.name,
     stock: movement.stock,
   });
+};
+
+const handleOpenCoilInfoDrawer = (coilId: string) => {
+  openCoilInfoCurrent.value = true;
+  coilIdCurrent.value = coilId;
 };
 
 const columns: TableProps["columns"] = [
@@ -138,10 +146,16 @@ const columns: TableProps["columns"] = [
       :scroll="{ x: 1100 }"
       bordered
     >
-      <template #bodyCell="{ column, text, record }">
+      <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
           <a-tag v-if="text">{{ text }}</a-tag>
           <span v-else>-</span>
+        </template>
+
+        <template v-else-if="column.dataIndex === 'coil'">
+          <a @click="handleOpenCoilInfoDrawer(record.coil.id)">
+            {{ value.serie }}
+          </a>
         </template>
 
         <template v-else-if="column.key === 'action'">
@@ -176,5 +190,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <CoilInfoDrawer
+      v-if="openCoilInfoCurrent && coilIdCurrent"
+      :open="openCoilInfoCurrent"
+      :coil-id="coilIdCurrent"
+      @onClose="openCoilInfoCurrent = false"
+    />
   </div>
 </template>
