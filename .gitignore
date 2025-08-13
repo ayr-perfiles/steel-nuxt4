@@ -22,3 +22,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# add by gsm
+offline-seed

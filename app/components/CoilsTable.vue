@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
+import { EStatusCoil } from "~/enums";
 import type { ICoil } from "~/models/coil";
 
 interface Coil {
@@ -18,6 +19,7 @@ const dayjs = useDayjs();
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openRolling = ref(false);
+const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
 const { data: coils, pending, remove } = useCrudCoils();
@@ -48,6 +50,11 @@ const handleOpenCuttingPlan = (coilSelected: any) => {
 
 const handleOpenRolling = (coilSelected: any) => {
   openRolling.value = true;
+  coil.value = coilSelected;
+};
+
+const handleInfoCoil = (coilSelected: any) => {
+  openInfoCoil.value = true;
   coil.value = coilSelected;
 };
 
@@ -113,7 +120,7 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "PRECIO TOTAL (S/)",
+    title: "PRECIO TOTAL (s/)",
     key: "total",
     dataIndex: "total",
     width: "120px",
@@ -151,41 +158,41 @@ const columns: TableProps["columns"] = [
       :scroll="{ x: 1100 }"
       bordered
     >
-      <template #bodyCell="{ column, text, record }">
+      <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
           <a-tag v-if="text">{{ text }}</a-tag>
           <span v-else>-</span>
         </template>
 
-        <template v-else-if="column.key === 'action'">
-          <!-- <template v-if="isModal">
-            <a-button type="link" @click="handleSelected(record)">
-              Seleccionar
-            </a-button>
-          </template> -->
+        <template v-else-if="column.dataIndex === 'status'">
+          <StatusCoilTag :status="value" />
+        </template>
 
-          <!-- <a
+        <template v-else-if="column.dataIndex === 'serie'">
+          <a v-if="record.isCutting" @click="handleInfoCoil(record)"
+            >{{ text }} <InfoCircleOutlined
+          /></a>
+          <span v-else>{{ text }}</span>
+        </template>
+
+        <template v-else-if="column.key === 'action'">
+          <a-button
+            type="link"
             @click.prevent="handleOpenRolling(record)"
             :disabled="!record.isCutting"
           >
             Rolar
-          </a> -->
-          <a-button
-            type="link"
-            :disabled="!record.isCutting"
-            @click="handleOpenRolling(record)"
-            >Rolar</a-button
-          >
+          </a-button>
           <a-divider type="vertical"></a-divider>
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
-            <a class="ant-dropdown-link" @click.prevent>
+            <a @click.prevent>
               Más
               <DownOutlined />
             </a>
             <template #overlay>
               <a-menu>
                 <a-menu-item :disabled="record.isCutting">
-                  <a @click="handleOpenCuttingPlan(record)"> Plan de corte </a>
+                  <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
                 </a-menu-item>
 
                 <a-menu-item>
@@ -213,6 +220,13 @@ const columns: TableProps["columns"] = [
       :coil="coil"
       :open="openRolling"
       @on-close="openRolling = false"
+    />
+
+    <CoilInfoModal
+      v-if="openInfoCoil && coil"
+      :coil="coil"
+      :open="openInfoCoil"
+      @on-close="openInfoCoil = false"
     />
   </div>
 </template>
