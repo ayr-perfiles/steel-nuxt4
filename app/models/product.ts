@@ -13,8 +13,7 @@ export interface IProduct {
 }
 
 // for movements
-export interface IProductMovement
-  extends Pick<IProduct, "id" | "name" | "width"> {}
+export interface IProductMovement extends Pick<IProduct, "id" | "name"> {}
 // end
 
 export const productConverter = {

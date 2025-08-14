@@ -65,7 +65,6 @@ watchEffect(() => {
         product: {
           id: item.product.id,
           name: item.product.name,
-          width: item.product.width,
         },
       } as IMovement;
     })

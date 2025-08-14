@@ -102,16 +102,16 @@ const handleOk = () => {
           ></a-input>
         </a-form-item>
 
-        <a-form-item label="Ancho" name="width">
+        <a-form-item label="Ancho [mm]" name="width">
           <a-input-number
             v-model:value="formState.width"
             class="w-full"
-            placeholder="Ingresar precio!"
+            placeholder="Ingresar ancho"
           ></a-input-number>
         </a-form-item>
       </a-card>
     </a-form>
 
-    <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+    <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
   </a-modal>
 </template>

@@ -78,13 +78,13 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "FECHA",
+    title: "FECHA DE ROLADO",
     key: "date",
     dataIndex: "date",
-    width: "100px",
+    width: "130px",
     align: "center",
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY");
+      return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
   },
   {
@@ -158,26 +158,21 @@ const columns: TableProps["columns"] = [
           </a>
         </template>
 
-        <template v-else-if="column.key === 'action'">
-          <!-- <template v-if="isModal">
-            <a-button type="link" @click="handleSelected(record)">
-              Seleccionar
-            </a-button>
-          </template> -->
+        <template v-else-if="column.dataIndex === 'quantity'">
+          <span :class="value > 0 ? '' : 'text-red-500'">
+            <ArrowUpOutlined v-if="value > 0" /> <ArrowDownOutlined v-else />
+            {{ text }}
+          </span>
+        </template>
 
-          <!-- <a @click.prevent="handleOpenRolling(record)"> Rolado </a>
-          <a-divider type="vertical"></a-divider>
+        <template v-else-if="column.key === 'action'">
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
-            <a class="ant-dropdown-link" @click.prevent>
+            <a @click.prevent>
               Más
               <DownOutlined />
             </a>
             <template #overlay>
               <a-menu>
-                <a-menu-item>
-                  <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
-                </a-menu-item>
-
                 <a-menu-item>
                   <a @click="handleUpdate(record)">Editar</a>
                 </a-menu-item>
@@ -186,7 +181,7 @@ const columns: TableProps["columns"] = [
                 </a-menu-item>
               </a-menu>
             </template>
-          </a-dropdown> -->
+          </a-dropdown>
         </template>
       </template>
     </a-table>
