@@ -106,11 +106,17 @@ const handleCalCost = (val: number | string) => {
       const calcWeightStrip =
         (props.coil.weight / (props.coil.width / 1000)) *
         (item.product.width / 1000);
-      const calcPriceStrip = calcWeightStrip * calcPriceReal.value;
+
+      const calcPriceStrip =
+        Math.round(calcWeightStrip * calcPriceReal.value * 10000) / 10000;
+
+      console.log("calcPriceStrip", calcPriceStrip, "calcCoil", calcCoil);
 
       return {
         ...item,
-        price: calcPriceStrip / calcCoil,
+        price: calcPriceStrip,
+        formula: `(${props.coil.weight} / (${props.coil.width} / 1000)) * (${item.product.width} / 1000) * ${calcPriceReal.value} = ${calcPriceStrip}`,
+        costo: `${calcPriceStrip} / ${calcCoil} = ${calcPriceStrip / calcCoil}`,
       };
     })
   );
@@ -191,14 +197,34 @@ const columns: TableProps["columns"] = [
         : "-",
   },
   {
-    title: "COSTO",
+    title: "PRECIO FLEJE",
+    key: "formula",
+    dataIndex: "formula",
+    width: "100px",
+    align: "center",
+    // customRender: ({ value }) => {
+    //   return currency(value, "", 4);
+    // },
+  },
+  {
+    title: "TEMP",
     key: "price",
     dataIndex: "price",
     width: "100px",
     align: "center",
-    customRender: ({ value }) => {
-      return currency(value, "", 4);
-    },
+    // customRender: ({ value }) => {
+    //   return currency(value, "", 4);
+    // },
+  },
+  {
+    title: "COSTO",
+    key: "costo",
+    dataIndex: "costo",
+    width: "100px",
+    align: "center",
+    // customRender: ({ value }) => {
+    //   return currency(value, "", 4);
+    // },
   },
 ];
 </script>
@@ -208,6 +234,7 @@ const columns: TableProps["columns"] = [
     :open="open"
     :mask-closable="false"
     :confirm-loading="loading"
+    :width="1000"
     @cancel="$emit('onClose')"
     @ok="handleOk"
   >
@@ -226,7 +253,19 @@ const columns: TableProps["columns"] = [
           <p>Bobina serie: {{ coil.serie }}</p>
           <p>Bobina preso: {{ coil.weight }}</p>
           <p>Peso flejes: {{ currency(calcWeightStripsTotal, "", 4) }}</p>
-        </a-form-item>
+          <p>
+            <strong>
+              calculo de bobina: {{ currency(calcCoil, "", 4) }}
+            </strong>
+            {{
+              `| formula: (${props.coil.weight} / (${props.coil.width} / 1000) / ${props.coil.density} / ${props.coil.thickness} / ${props.coil.price})`
+            }}
+          </p>
+          <p>
+            <strong> Precio real: {{ currency(calcPriceReal, "", 4) }} </strong>
+            {{ `| formula: ${props.coil.total} / ${calcWeightStripsTotal}` }}
+          </p></a-form-item
+        >
       </a-form>
 
       <a-table
