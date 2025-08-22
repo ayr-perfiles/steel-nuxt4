@@ -46,7 +46,7 @@ const columns: TableProps["columns"] = [
     align: "center",
   },
   {
-    title: "PRECIO",
+    title: "PRECIO [S/]",
     key: "price",
     dataIndex: "price",
     width: "100px",

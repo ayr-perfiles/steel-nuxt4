@@ -97,20 +97,20 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "ANCHO (mm)",
+    title: "ANCHO [mm]",
     key: "width",
     dataIndex: "width",
     width: "100px",
   },
 
   {
-    title: "PESO (kg)",
+    title: "PESO [kg]",
     key: "weight",
     dataIndex: "weight",
     width: "100px",
   },
   {
-    title: "PRECIO POR (kg)",
+    title: "PRECIO POR [kg]",
     key: "price",
     dataIndex: "price",
     width: "120px",
@@ -120,7 +120,7 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "PRECIO TOTAL (s/)",
+    title: "PRECIO TOTAL [S/]",
     key: "total",
     dataIndex: "total",
     width: "120px",

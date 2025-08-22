@@ -83,10 +83,10 @@ const columns: TableProps["columns"] = [
     align: "center",
   },
   {
-    title: "COSTO PROMEDIO",
+    title: "COSTO PROMEDIO [S/]",
     key: "price",
     dataIndex: "price",
-    width: "130px",
+    width: "150px",
     align: "right",
     customRender: ({ value }) => {
       return currency(value, "", 4);
@@ -95,7 +95,7 @@ const columns: TableProps["columns"] = [
   {
     title: "",
     key: "action",
-    width: "110px",
+    width: "80px",
     align: "center",
   },
 ];
@@ -118,33 +118,22 @@ const columns: TableProps["columns"] = [
         </template>
 
         <template v-else-if="column.key === 'action'">
-          <!-- <template v-if="isModal">
-            <a-button type="link" @click="handleSelected(record)">
-              Seleccionar
-            </a-button>
-          </template>
-
-          <template v-else>
-            <a-dropdown
-              placement="bottomRight"
-              :arrow="{ pointAtCenter: true }"
-            >
-              <a class="ant-dropdown-link" @click.prevent>
-                Más
-                <DownOutlined />
-              </a>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item>
-                    <a @click="handleUpdate(record)">Editar</a>
-                  </a-menu-item>
-                  <a-menu-item>
-                    <a @click="handleRemove(record.id)">Eliminar</a>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </template> -->
+          <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
+            <a @click.prevent>
+              Más
+              <DownOutlined />
+            </a>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item>
+                  <a @click="handleUpdate(record)">Editar</a>
+                </a-menu-item>
+                <a-menu-item>
+                  <a @click="handleRemove(record.id)">Eliminar</a>
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
         </template>
       </template>
     </a-table>
