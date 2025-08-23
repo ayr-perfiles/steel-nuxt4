@@ -6,14 +6,17 @@ import {
 } from "firebase/firestore";
 import type { IAudit } from "./audit";
 import type { EStatusCoil } from "~/enums";
+import type { Dayjs } from "dayjs";
 
 export interface ICoil extends IAudit {
   id: string;
+  date: Dayjs | Timestamp | Date;
   serie: string;
   width: number;
   thickness: number;
   weight: number;
-  price: number;
+  weightTotalStrips: number;
+  pricePerKilogram: number;
   total: number;
   density: number;
   status: EStatusCoil;
@@ -27,11 +30,13 @@ export interface ICoilMovement extends Pick<ICoil, "id" | "serie"> {}
 export const coilConverter = {
   toFirestore: (coil: ICoil) => {
     return {
+      date: coil.date,
       serie: coil.serie,
-      weight: coil.weight,
-      price: coil.price,
       width: coil.width,
       thickness: coil.thickness,
+      weight: coil.weight,
+      weightTotalStrips: coil.weightTotalStrips || null,
+      pricePerKilogram: coil.pricePerKilogram,
       total: coil.total,
       density: coil.density,
       status: coil.status,
@@ -47,6 +52,7 @@ export const coilConverter = {
   ) => {
     const data = snapshot.data(options);
     data.id = snapshot.id;
+    data.date = (data.date as Timestamp)?.toDate();
     data.createdAt = (data.createdAt as Timestamp)?.toDate();
     data.updatedAt = (data.updatedAt as Timestamp)?.toDate();
     return data;

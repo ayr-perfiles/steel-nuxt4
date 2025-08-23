@@ -26,80 +26,80 @@
 // this will be the maximum concurrent request count.
 // setGlobalOptions({ maxInstances: 10 });
 
-import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { setGlobalOptions } from "firebase-functions";
-import { onDocumentCreated } from "firebase-functions/firestore";
+// // import { initializeApp } from "firebase-admin/app";
+// // import { getFirestore } from "firebase-admin/firestore";
+// // import { setGlobalOptions } from "firebase-functions";
+// // import { onDocumentCreated } from "firebase-functions/firestore";
 
-initializeApp();
-const db = getFirestore();
+// // initializeApp();
+// // const db = getFirestore();
 
-export const onMovementCreate = onDocumentCreated(
-  "movements/{movId}",
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) {
-      console.log("No data associated with the event");
-      return;
-    }
+// // export const onMovementCreate = onDocumentCreated(
+// //   "movements/{movId}",
+// //   async (event) => {
+// //     const snapshot = event.data;
+// //     if (!snapshot) {
+// //       console.log("No data associated with the event");
+// //       return;
+// //     }
 
-    const data = snapshot.data();
-    const productId = data.product.id;
-    const productRef = db.collection("products").doc(productId);
+// //     const data = snapshot.data();
+// //     const productId = data.product.id;
+// //     const productRef = db.collection("products").doc(productId);
 
-    await db.runTransaction(async (transaction) => {
-      const product = await transaction.get(productRef);
+// //     await db.runTransaction(async (transaction) => {
+// //       const product = await transaction.get(productRef);
 
-      if (!product.exists) throw new Error("Document does not exist!");
+// //       if (!product.exists) throw new Error("Document does not exist!");
 
-      const dataProduct = product.data();
-      if (!dataProduct) throw new Error("No Data!");
+// //       const dataProduct = product.data();
+// //       if (!dataProduct) throw new Error("No Data!");
 
-      const newSumStock = dataProduct.stock + data.quantity;
-      transaction.update(productRef, {
-        stock: newSumStock,
-      });
-    });
-  }
-);
+// //       const newSumStock = dataProduct.stock + data.quantity;
+// //       transaction.update(productRef, {
+// //         stock: newSumStock,
+// //       });
+// //     });
+// //   }
+// // );
 
-export const onCuttingPlanCreated = onDocumentCreated(
-  "coils/{coilId}/strips/{stripId}",
-  async (event) => {
-    const snapshot = event.data;
-    if (!snapshot) {
-      console.log("No data associated with the event");
-      return;
-    }
+// // export const onCuttingPlanCreated = onDocumentCreated(
+// //   "coils/{coilId}/strips/{stripId}",
+// //   async (event) => {
+// //     const snapshot = event.data;
+// //     if (!snapshot) {
+// //       console.log("No data associated with the event");
+// //       return;
+// //     }
 
-    const data = snapshot.data();
-    const productId = data.product.id;
-    const productRef = db.collection("products").doc(productId);
-    const coilsRef = db.collection("coils").doc(event.params.coilId);
+// //     const data = snapshot.data();
+// //     const productId = data.product.id;
+// //     const productRef = db.collection("products").doc(productId);
+// //     const coilsRef = db.collection("coils").doc(event.params.coilId);
 
-    await db.runTransaction(async (transaction) => {
-      const product = await transaction.get(productRef);
-      const coil = await transaction.get(coilsRef);
+// //     await db.runTransaction(async (transaction) => {
+// //       const product = await transaction.get(productRef);
+// //       const coil = await transaction.get(coilsRef);
 
-      const dataProduct = product.data();
-      const dataCoil = coil.data();
+// //       const dataProduct = product.data();
+// //       const dataCoil = coil.data();
 
-      if (!dataProduct) throw new Error("No Data Product!");
-      if (!dataCoil) throw new Error("No Data Coil!");
+// //       if (!dataProduct) throw new Error("No Data Product!");
+// //       if (!dataCoil) throw new Error("No Data Coil!");
 
-      const costAverage = dataProduct.price
-        ? (dataProduct.price + data.price) / 2
-        : data.price;
+// //       const costAverage = dataProduct.price
+// //         ? (dataProduct.price + data.price) / 2
+// //         : data.price;
 
-      transaction.update(productRef, {
-        price: costAverage,
-      });
+// //       transaction.update(productRef, {
+// //         price: costAverage,
+// //       });
 
-      transaction.update(coilsRef, {
-        isCutting: true,
-      });
-    });
-  }
-);
+// //       transaction.update(coilsRef, {
+// //         isCutting: true,
+// //       });
+// //     });
+// //   }
+// // );
 
-setGlobalOptions({ maxInstances: 10 });
+// // setGlobalOptions({ maxInstances: 10 });

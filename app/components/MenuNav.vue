@@ -1,18 +1,12 @@
 <script lang="ts" setup>
 import {
-  AimOutlined,
-  AuditOutlined,
   BarChartOutlined,
   BarcodeOutlined,
-  CarOutlined,
+  BuildOutlined,
   ContactsOutlined,
   DollarOutlined,
-  FileDoneOutlined,
-  GlobalOutlined,
-  GoldFilled,
   GroupOutlined,
   StockOutlined,
-  TagsOutlined,
   TeamOutlined,
 } from "@ant-design/icons-vue";
 import type { ItemType, MenuProps } from "ant-design-vue";
@@ -57,8 +51,9 @@ const items: ItemType[] = reactive([
   getItem("Producto", "grp", null, [], "group"),
   { type: "divider" },
 
-  getItem("Lista de productos", "Products", () => h(BarcodeOutlined)),
   getItem("Lista de bobinas", "Coils", () => h(GroupOutlined)),
+  getItem("Lista de flejes", "Strips", () => h(BuildOutlined)),
+  getItem("Lista de productos", "Products", () => h(BarcodeOutlined)),
   // getItem("Envases", "Envases", () => h(GoldFilled)),
   // getItem("Marcas", "Brands", () => h(TagsOutlined)),
 

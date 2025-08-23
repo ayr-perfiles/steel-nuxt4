@@ -4,6 +4,7 @@ import { layout } from "~/constants";
 import { type ICoil } from "~/models/coil";
 import _ from "lodash";
 import { EStatusCoil } from "~/enums";
+import type { Dayjs } from "dayjs";
 
 interface Props {
   open: boolean;
@@ -16,10 +17,14 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const dayjs = useDayjs();
+const value1 = ref<Dayjs>(dayjs());
+
 const loading = ref(false);
 const formRef = ref();
 
 const formState = reactive<Partial<ICoil>>({
+  date: dayjs(),
   serie: "",
   width: 1200,
   thickness: 0.45,
@@ -47,7 +52,7 @@ const rules: Record<string, Rule[]> = {
       message: "Ingresar peso!",
     },
   ],
-  price: [
+  pricePerKilogram: [
     {
       required: true,
       message: "Ingresar precio!",
@@ -84,7 +89,12 @@ const handleOk = () => {
         if (props.coil) {
           await updateCoil(props.coil.id, _.cloneDeep(formState as ICoil));
         } else {
-          await addCoil(_.cloneDeep(formState as ICoil));
+          await addCoil(
+            _.cloneDeep({
+              ...formState,
+              date: (formState.date as Dayjs).toDate(),
+            } as ICoil)
+          );
         }
         notificationSuccess(`Se añadió`);
         emit("onClose");
@@ -98,6 +108,11 @@ const handleOk = () => {
     .catch((error: any) => {
       console.log("error", error);
     });
+};
+
+const disabledDate = (current: Dayjs) => {
+  // Can not select days before today and today
+  return current && current > dayjs().endOf("day");
 };
 </script>
 
@@ -123,6 +138,15 @@ const handleOk = () => {
 
     <a-form ref="formRef" :model="formState" :rules="rules" v-bind="layout">
       <a-card>
+        <a-form-item label="Fecha" name="serie">
+          <a-date-picker
+            v-model:value="formState.date as Dayjs"
+            format="DD-MM-YYYY HH:mm:ss"
+            :disabled-date="disabledDate"
+            :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
+          />
+        </a-form-item>
+
         <a-form-item label="Serie" name="serie">
           <a-input
             v-model:value="formState.serie"
@@ -140,7 +164,7 @@ const handleOk = () => {
 
         <a-form-item label="Precio por kg" name="price">
           <a-input-number
-            v-model:value="formState.price"
+            v-model:value="formState.pricePerKilogram"
             class="w-full"
             placeholder="Ingresar precio por kg"
           ></a-input-number>
@@ -172,6 +196,6 @@ const handleOk = () => {
       </a-card>
     </a-form>
 
-    <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
+    <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
   </a-modal>
 </template>

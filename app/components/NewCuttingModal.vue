@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import type { FormInstance, Rule } from "ant-design-vue/es/form";
 import { type ICoil } from "~/models/coil";
 import _ from "lodash";
-import { EStatusCoil } from "~/enums";
 import type { IStrip } from "~/models/strip";
 import type { TableProps } from "ant-design-vue";
+import type { Dayjs } from "dayjs";
 
 interface Props {
   open: boolean;
@@ -17,69 +16,15 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const dayjs = useDayjs();
+const value1 = ref<Dayjs>(dayjs());
+
 const loading = ref(false);
-// const formRef = ref();
 
-const formState = reactive<Partial<ICoil>>({
-  serie: "",
-  width: 1200,
-  thickness: 0.45,
-  density: 7.85,
-  status: EStatusCoil.process,
-});
-
-const rules: Record<string, Rule[]> = {
-  serie: [
-    {
-      required: true,
-      message: "Ingresar serie!",
-    },
-  ],
-  weight: [
-    {
-      required: true,
-      message: "Ingresar peso!",
-    },
-  ],
-  price: [
-    {
-      required: true,
-      message: "Ingresar precio!",
-    },
-  ],
-  width: [
-    {
-      required: true,
-      message: "Ingresar ancho!",
-    },
-  ],
-  thickness: [
-    {
-      required: true,
-      message: "Ingresar thickness!",
-    },
-  ],
-  density: [
-    {
-      required: true,
-      message: "Ingresar factor!",
-    },
-  ],
-};
-
-const { add: addCoil, update: updateCoil } = useCrudCoils();
 const { data: products, pending } = useCrudProducts();
 const { addAll: addAllStrips } = useCrudStrips(props.coil.id);
 
-const formRef = ref<FormInstance>();
 const strips = reactive<IStrip[]>([]);
-
-const calcCoil =
-  props.coil.weight /
-  (props.coil.width / 1000) /
-  props.coil.density /
-  props.coil.thickness /
-  props.coil.price;
 
 const calcWeightStripsTotal = computed(() =>
   strips
@@ -101,22 +46,21 @@ const handleCalCost = (val: number | string) => {
   Object.assign(
     strips,
     strips.map((item) => {
-      if (!item.quantity) return { ...item };
+      if (!item.quantity) return { coil: item.coil, product: item.product };
 
       const calcWeightStrip =
         (props.coil.weight / (props.coil.width / 1000)) *
         (item.product.width / 1000);
 
-      const calcPriceStrip =
-        Math.round(calcWeightStrip * calcPriceReal.value * 10000) / 10000;
-
-      console.log("calcPriceStrip", calcPriceStrip, "calcCoil", calcCoil);
+      const calcPriceStrip = calcWeightStrip * calcPriceReal.value;
 
       return {
         ...item,
-        price: calcPriceStrip,
-        formula: `(${props.coil.weight} / (${props.coil.width} / 1000)) * (${item.product.width} / 1000) * ${calcPriceReal.value} = ${calcPriceStrip}`,
-        costo: `${calcPriceStrip} / ${calcCoil} = ${calcPriceStrip / calcCoil}`,
+        weightStrips: parseFloat((calcWeightStrip * item.quantity).toFixed(4)),
+        priceRealPerKilogram: parseFloat(calcPriceReal.value.toFixed(4)),
+        pricePerStrip: parseFloat(calcPriceStrip.toFixed(4)),
+        // formula: `(${props.coil.weight} / (${props.coil.width} / 1000)) * (${item.product.width} / 1000) * ${calcPriceReal.value} = ${calcPriceStrip}`,
+        // costo: `${calcPriceStrip} / ${calcCoil} = ${calcPriceStrip / calcCoil}`,
       };
     })
   );
@@ -126,7 +70,16 @@ const handleOk = async () => {
   if (strips.length > 0) {
     try {
       loading.value = true;
-      await addAllStrips(_.cloneDeep(strips.filter((item) => item.quantity)));
+      await addAllStrips(
+        _.cloneDeep(
+          strips
+            .filter((item) => item.quantity)
+            .map((item) => {
+              return { ...item, date: value1.value.toDate() };
+            })
+        ),
+        props.coil.id
+      );
       notificationSuccess(`Se añadió`);
       emit("onClose");
       console.log("finish!");
@@ -138,11 +91,17 @@ const handleOk = async () => {
   }
 };
 
+const disabledDate = (current: Dayjs) => {
+  // Can not select days before today and today
+  return current && current > dayjs().endOf("day");
+};
+
 watchEffect(() => {
   Object.assign(
     strips,
     products.value.map((item) => {
       return {
+        coil: { id: props.coil.id, serie: props.coil.serie },
         product: { id: item.id, name: item.name, width: item.width },
       } as IStrip;
     })
@@ -166,8 +125,8 @@ const columns: TableProps["columns"] = [
     dataIndex: "product",
     defaultSortOrder: "descend",
     sorter: (a: any, b: any) =>
-      (a.product.name as string).charCodeAt(0) -
-      (b.product.name as string).charCodeAt(0),
+      (b.product.name as string).charCodeAt(0) -
+      (a.product.name as string).charCodeAt(0),
     customRender: ({ value }) => {
       return `${value.name}`;
     },
@@ -181,51 +140,62 @@ const columns: TableProps["columns"] = [
   },
   {
     title: "PESO",
-    key: "weight",
-    dataIndex: "weight",
+    key: "weightStrips",
+    dataIndex: "weightStrips",
     width: "100px",
-    align: "center",
-    customRender: ({ record }) =>
-      record.quantity
-        ? currency(
-            (props.coil.weight / (props.coil.width / 1000)) *
-              (record.product.width / 1000) *
-              record.quantity,
-            "",
-            4
-          )
-        : "-",
+    align: "right",
+
+    // customRender: ({ record }) =>
+    //   record.quantity
+    //     ? currency(
+    //         (props.coil.weight / (props.coil.width / 1000)) *
+    //           (record.product.width / 1000) *
+    //           record.quantity,
+    //         "",
+    //         4
+    //       )
+    //     : "-",
   },
   {
-    title: "PRECIO FLEJE",
-    key: "formula",
-    dataIndex: "formula",
+    title: "PRECIO REAL POR [kg]",
+    key: "priceRealPerKilogram",
+    dataIndex: "priceRealPerKilogram",
     width: "100px",
-    align: "center",
+    align: "right",
     // customRender: ({ value }) => {
     //   return currency(value, "", 4);
     // },
   },
   {
-    title: "TEMP",
-    key: "price",
-    dataIndex: "price",
+    title: "PRECIO POR FLEJE",
+    key: "pricePerStrip",
+    dataIndex: "pricePerStrip",
     width: "100px",
-    align: "center",
+    align: "right",
     // customRender: ({ value }) => {
     //   return currency(value, "", 4);
     // },
   },
-  {
-    title: "COSTO",
-    key: "costo",
-    dataIndex: "costo",
-    width: "100px",
-    align: "center",
-    // customRender: ({ value }) => {
-    //   return currency(value, "", 4);
-    // },
-  },
+  // {
+  //   title: "TEMP",
+  //   key: "price",
+  //   dataIndex: "price",
+  //   width: "100px",
+  //   align: "center",
+  //   // customRender: ({ value }) => {
+  //   //   return currency(value, "", 4);
+  //   // },
+  // },
+  // {
+  //   title: "COSTO POR UNIDAD",
+  //   key: "costo",
+  //   dataIndex: "costo",
+  //   width: "100px",
+  //   align: "center",
+  //   // customRender: ({ value }) => {
+  //   //   return currency(value, "", 4);
+  //   // },
+  // },
 ];
 </script>
 
@@ -250,22 +220,31 @@ const columns: TableProps["columns"] = [
     <a-card>
       <a-form>
         <a-form-item>
+          <a-date-picker
+            v-model:value="value1"
+            format="DD-MM-YYYY HH:mm:ss"
+            :disabled-date="disabledDate"
+            :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
+          />
+        </a-form-item>
+
+        <a-form-item>
           <p>Bobina serie: {{ coil.serie }}</p>
           <p>Bobina preso: {{ coil.weight }}</p>
           <p>Peso flejes: {{ currency(calcWeightStripsTotal, "", 4) }}</p>
-          <p>
+          <!-- <p>
             <strong>
               calculo de bobina: {{ currency(calcCoil, "", 4) }}
             </strong>
             {{
-              `| formula: (${props.coil.weight} / (${props.coil.width} / 1000) / ${props.coil.density} / ${props.coil.thickness} / ${props.coil.price})`
+              `| formula: (${props.coil.weight} / (${props.coil.width} / 1000) / ${props.coil.density} / ${props.coil.thickness} `
             }}
-          </p>
+          </p> -->
           <p>
             <strong> Precio real: {{ currency(calcPriceReal, "", 4) }} </strong>
             {{ `| formula: ${props.coil.total} / ${calcWeightStripsTotal}` }}
-          </p></a-form-item
-        >
+          </p>
+        </a-form-item>
       </a-form>
 
       <a-table
@@ -281,6 +260,7 @@ const columns: TableProps["columns"] = [
             <div>
               <a-input-number
                 v-model:value="record.quantity"
+                min="1"
                 @change="handleCalCost"
               ></a-input-number>
             </div>
@@ -289,6 +269,6 @@ const columns: TableProps["columns"] = [
       </a-table>
     </a-card>
 
-    <!-- <pre>{{ JSON.stringify(strips, null, 2) }}</pre> -->
+    <pre>{{ JSON.stringify(strips, null, 2) }}</pre>
   </a-modal>
 </template>

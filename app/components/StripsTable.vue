@@ -1,17 +1,16 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
-import { EStatusCoil } from "~/enums";
-import type { ICoil } from "~/models/coil";
+import type { IStrip } from "~/models/strip";
 
-interface Coil {
+interface Strip {
   id: string;
   name: string;
   stock: number;
 }
 
 const emit = defineEmits<{
-  onSelected: [coil: Coil];
+  onSelected: [strip: Strip];
 }>();
 
 const dayjs = useDayjs();
@@ -19,18 +18,18 @@ const dayjs = useDayjs();
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openRolling = ref(false);
-const openInfoCoil = ref(false);
-const coil = ref<ICoil>();
+const openInfoStrip = ref(false);
+const strip = ref<IStrip>();
 
-const { data: coils, pending, remove } = useCrudCoils();
+const { data: strips, pending, remove } = useCrudStrips();
 
 const handleRemove = (id: string) => {
   // try {
   //   Modal.confirm({
-  //     title: "Eliminar coilo?",
+  //     title: "Eliminar stripo?",
   //     onOk: async () => {
   //       await remove(db, id)
-  //       notificationSuccess("coilo eliminado")
+  //       notificationSuccess("stripo eliminado")
   //     },
   //   })
   // } catch (error: any) {
@@ -38,31 +37,31 @@ const handleRemove = (id: string) => {
   // }
 };
 
-const handleUpdate = (coilSelected: any) => {
+const handleUpdate = (stripSelected: any) => {
   open.value = true;
-  coil.value = coilSelected;
+  strip.value = stripSelected;
 };
 
-const handleOpenCuttingPlan = (coilSelected: any) => {
+const handleOpenCuttingPlan = (stripSelected: any) => {
   openCuttingPlan.value = true;
-  coil.value = coilSelected;
+  strip.value = stripSelected;
 };
 
-const handleOpenRolling = (coilSelected: any) => {
+const handleOpenRolling = (stripSelected: any) => {
   openRolling.value = true;
-  coil.value = coilSelected;
+  strip.value = stripSelected;
 };
 
-const handleInfoCoil = (coilSelected: any) => {
-  openInfoCoil.value = true;
-  coil.value = coilSelected;
+const handleInfoStrip = (stripSelected: any) => {
+  openInfoStrip.value = true;
+  strip.value = stripSelected;
 };
 
-const handleSelected = (coil: any) => {
+const handleSelected = (strip: any) => {
   emit("onSelected", {
-    id: coil.id,
-    name: coil.name,
-    stock: coil.stock,
+    id: strip.id,
+    name: strip.name,
+    stock: strip.stock,
   });
 };
 
@@ -78,8 +77,8 @@ const columns: TableProps["columns"] = [
   },
   {
     title: "FECHA",
-    key: "createdAt",
-    dataIndex: "createdAt",
+    key: "date",
+    dataIndex: "date",
     width: "100px",
     align: "center",
     customRender: ({ value }) => {
@@ -87,56 +86,90 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "SERIE",
-    key: "serie",
-    dataIndex: "serie",
-    sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
-    customRender: ({ value, record }) => {
-      return `${value} ${record.isCutting ? " | Cortado" : ""}`;
+    title: "BOBINA",
+    key: "coil",
+    dataIndex: "coil",
+    customRender: ({ value }) => {
+      return value.serie;
     },
   },
   {
-    title: "ANCHO [mm]",
-    key: "width",
-    dataIndex: "width",
+    title: "PRODUCTO",
+    key: "product",
+    dataIndex: "product",
+    customRender: ({ value }) => {
+      return value.name;
+    },
+  },
+  {
+    title: "CANTIDAD FLEJES",
+    key: "quantity",
+    dataIndex: "quantity",
     width: "100px",
+    align: "center",
+  },
+  {
+    title: "CANTIDAD FLEJES DISPONIBLES",
+    key: "quantityAvailable",
+    dataIndex: "quantityAvailable",
+    width: "100px",
+    align: "center",
   },
 
   {
-    title: "PESO [kg]",
-    key: "weight",
-    dataIndex: "weight",
+    title: "PESO FLEJES [kg]",
+    key: "weightStrips",
+    dataIndex: "weightStrips",
     width: "100px",
   },
   {
-    title: "PRECIO POR [kg]",
-    key: "pricePerKilogram",
-    dataIndex: "pricePerKilogram",
+    title: "PRECIO REAL POR [kg]",
+    key: "priceRealPerKilogram",
+    dataIndex: "priceRealPerKilogram",
     width: "120px",
     align: "right",
-    customRender: ({ value }) => {
-      return currency(value, "", 4);
-    },
+    // customRender: ({ value }) => {
+    //   return currency(value, "", 4);
+    // },
   },
   {
-    title: "PRECIO TOTAL [S/]",
-    key: "total",
-    dataIndex: "total",
+    title: "PRECIO POR FLEJE [S/]",
+    key: "pricePerStrip",
+    dataIndex: "pricePerStrip",
     width: "120px",
     align: "right",
-    customRender: ({ value }) => {
-      return currency(value, "");
-    },
+    // customRender: ({ value }) => {
+    //   return currency(value, "", 4);
+    // },
   },
   {
-    title: "ESTADO",
-    key: "status",
-    dataIndex: "status",
+    title: "COSTO POR UNIDAD [S/]",
+    key: "costPerUnit",
+    dataIndex: "costPerUnit",
+    width: "120px",
+    align: "right",
+    // customRender: ({ value }) => {
+    //   return currency(value, "");
+    // },
+  },
+  {
+    title: "CANT PRODUCTOS ROLADOS",
+    key: "qProductProduced",
+    dataIndex: "qProductProduced",
+    width: "120px",
+    align: "center",
+    // customRender: ({ value }) => {
+    //   return currency(value, "");
+    // },
+  },
+  {
+    title: "ROLADO?",
+    key: "isRolling",
+    dataIndex: "isRolling",
     width: "100px",
     align: "center",
     customRender: ({ value }) => {
-      return getStatusCoil(value);
+      return value ? "Sí" : "No";
     },
   },
   {
@@ -152,7 +185,7 @@ const columns: TableProps["columns"] = [
   <div>
     <a-table
       :columns="columns"
-      :data-source="coils"
+      :data-source="strips"
       :loading="pending"
       :pagination="false"
       :scroll="{ x: 1100 }"
@@ -164,12 +197,8 @@ const columns: TableProps["columns"] = [
           <span v-else>-</span>
         </template>
 
-        <template v-else-if="column.dataIndex === 'status'">
-          <StatusCoilTag :status="value" />
-        </template>
-
         <template v-else-if="column.dataIndex === 'serie'">
-          <a v-if="record.isCutting" @click="handleInfoCoil(record)"
+          <a v-if="record.isCutting" @click="handleInfoStrip(record)"
             >{{ text }} <InfoCircleOutlined
           /></a>
           <span v-else>{{ text }}</span>
@@ -207,26 +236,26 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
-
+    <!-- 
     <NewCuttingModal
-      v-if="openCuttingPlan && coil"
-      :coil="coil"
+      v-if="openCuttingPlan && strip"
+      :strip="strip"
       :open="openCuttingPlan"
       @on-close="openCuttingPlan = false"
     />
 
-    <NewRollingModal
-      v-if="openRolling && coil"
-      :coil="coil"
+    <NewMovementModal
+      v-if="openRolling && strip"
+      :strip="strip"
       :open="openRolling"
       @on-close="openRolling = false"
     />
 
-    <CoilInfoModal
-      v-if="openInfoCoil && coil"
-      :coil="coil"
-      :open="openInfoCoil"
-      @on-close="openInfoCoil = false"
-    />
+    <StripInfoModal
+      v-if="openInfoStrip && strip"
+      :strip="strip"
+      :open="openInfoStrip"
+      @on-close="openInfoStrip = false"
+    /> -->
   </div>
 </template>
