@@ -101,7 +101,11 @@ watchEffect(() => {
     strips,
     products.value.map((item) => {
       return {
-        coil: { id: props.coil.id, serie: props.coil.serie },
+        coil: {
+          id: props.coil.id,
+          serie: props.coil.serie,
+          weight: props.coil.weight,
+        },
         product: { id: item.id, name: item.name, width: item.width },
       } as IStrip;
     })

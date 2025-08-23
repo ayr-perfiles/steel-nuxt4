@@ -16,7 +16,6 @@ const emit = defineEmits<{
 const dayjs = useDayjs();
 
 const open = ref(false);
-const openCuttingPlan = ref(false);
 const openRolling = ref(false);
 const openInfoStrip = ref(false);
 const strip = ref<IStrip>();
@@ -42,11 +41,6 @@ const handleUpdate = (stripSelected: any) => {
   strip.value = stripSelected;
 };
 
-const handleOpenCuttingPlan = (stripSelected: any) => {
-  openCuttingPlan.value = true;
-  strip.value = stripSelected;
-};
-
 const handleOpenRolling = (stripSelected: any) => {
   openRolling.value = true;
   strip.value = stripSelected;
@@ -55,14 +49,6 @@ const handleOpenRolling = (stripSelected: any) => {
 const handleInfoStrip = (stripSelected: any) => {
   openInfoStrip.value = true;
   strip.value = stripSelected;
-};
-
-const handleSelected = (strip: any) => {
-  emit("onSelected", {
-    id: strip.id,
-    name: strip.name,
-    stock: strip.stock,
-  });
 };
 
 const columns: TableProps["columns"] = [
@@ -142,36 +128,36 @@ const columns: TableProps["columns"] = [
     //   return currency(value, "", 4);
     // },
   },
-  {
-    title: "COSTO POR UNIDAD [S/]",
-    key: "costPerUnit",
-    dataIndex: "costPerUnit",
-    width: "120px",
-    align: "right",
-    // customRender: ({ value }) => {
-    //   return currency(value, "");
-    // },
-  },
-  {
-    title: "CANT PRODUCTOS ROLADOS",
-    key: "qProductProduced",
-    dataIndex: "qProductProduced",
-    width: "120px",
-    align: "center",
-    // customRender: ({ value }) => {
-    //   return currency(value, "");
-    // },
-  },
-  {
-    title: "ROLADO?",
-    key: "isRolling",
-    dataIndex: "isRolling",
-    width: "100px",
-    align: "center",
-    customRender: ({ value }) => {
-      return value ? "Sí" : "No";
-    },
-  },
+  // {
+  //   title: "COSTO POR UNIDAD [S/]",
+  //   key: "costPerUnit",
+  //   dataIndex: "costPerUnit",
+  //   width: "120px",
+  //   align: "right",
+  //   // customRender: ({ value }) => {
+  //   //   return currency(value, "");
+  //   // },
+  // },
+  // {
+  //   title: "CANT PRODUCTOS ROLADOS",
+  //   key: "qProductProduced",
+  //   dataIndex: "qProductProduced",
+  //   width: "120px",
+  //   align: "center",
+  //   // customRender: ({ value }) => {
+  //   //   return currency(value, "");
+  //   // },
+  // },
+  // {
+  //   title: "ROLADO?",
+  //   key: "isRolling",
+  //   dataIndex: "isRolling",
+  //   width: "100px",
+  //   align: "center",
+  //   customRender: ({ value }) => {
+  //     return value ? "Sí" : "No";
+  //   },
+  // },
   {
     title: "",
     key: "action",
@@ -197,18 +183,18 @@ const columns: TableProps["columns"] = [
           <span v-else>-</span>
         </template>
 
-        <template v-else-if="column.dataIndex === 'serie'">
+        <!-- <template v-else-if="column.dataIndex === 'serie'">
           <a v-if="record.isCutting" @click="handleInfoStrip(record)"
             >{{ text }} <InfoCircleOutlined
           /></a>
           <span v-else>{{ text }}</span>
-        </template>
+        </template> -->
 
         <template v-else-if="column.key === 'action'">
           <a-button
             type="link"
             @click.prevent="handleOpenRolling(record)"
-            :disabled="!record.isCutting"
+            :disabled="record.quantityAvailable < 1"
           >
             Rolar
           </a-button>
@@ -220,10 +206,6 @@ const columns: TableProps["columns"] = [
             </a>
             <template #overlay>
               <a-menu>
-                <a-menu-item :disabled="record.isCutting">
-                  <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
-                </a-menu-item>
-
                 <a-menu-item>
                   <a @click="handleUpdate(record)">Editar</a>
                 </a-menu-item>
@@ -236,26 +218,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
-    <!-- 
-    <NewCuttingModal
-      v-if="openCuttingPlan && strip"
-      :strip="strip"
-      :open="openCuttingPlan"
-      @on-close="openCuttingPlan = false"
-    />
 
-    <NewMovementModal
+    <NewRollingModal
       v-if="openRolling && strip"
       :strip="strip"
       :open="openRolling"
       @on-close="openRolling = false"
     />
-
-    <StripInfoModal
-      v-if="openInfoStrip && strip"
-      :strip="strip"
-      :open="openInfoStrip"
-      @on-close="openInfoStrip = false"
-    /> -->
   </div>
 </template>

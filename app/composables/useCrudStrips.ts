@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { stripConverter, type IStrip } from "~/models/strip";
 import { coilConverter } from "~/models/coil";
+import { EStatusCoil } from "~/enums";
 
 export const useCrudStrips = (id?: string) => {
   const dbClient = useFirestore();
@@ -53,6 +54,7 @@ export const useCrudStrips = (id?: string) => {
     batch.update(coilRef, {
       isCutting: true,
       weightTotalStrips: parseFloat(totalWeight.toFixed(4)),
+      status: EStatusCoil.completed,
       updatedAt: serverTimestamp(),
     });
 

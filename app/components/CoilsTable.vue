@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
-import { EStatusCoil } from "~/enums";
 import type { ICoil } from "~/models/coil";
 
 interface Coil {
@@ -18,7 +17,6 @@ const dayjs = useDayjs();
 
 const open = ref(false);
 const openCuttingPlan = ref(false);
-const openRolling = ref(false);
 const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
@@ -48,22 +46,9 @@ const handleOpenCuttingPlan = (coilSelected: any) => {
   coil.value = coilSelected;
 };
 
-const handleOpenRolling = (coilSelected: any) => {
-  openRolling.value = true;
-  coil.value = coilSelected;
-};
-
 const handleInfoCoil = (coilSelected: any) => {
   openInfoCoil.value = true;
   coil.value = coilSelected;
-};
-
-const handleSelected = (coil: any) => {
-  emit("onSelected", {
-    id: coil.id,
-    name: coil.name,
-    stock: coil.stock,
-  });
 };
 
 const columns: TableProps["columns"] = [
@@ -176,14 +161,6 @@ const columns: TableProps["columns"] = [
         </template>
 
         <template v-else-if="column.key === 'action'">
-          <a-button
-            type="link"
-            @click.prevent="handleOpenRolling(record)"
-            :disabled="!record.isCutting"
-          >
-            Rolar
-          </a-button>
-          <a-divider type="vertical"></a-divider>
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
             <a @click.prevent>
               Más
@@ -213,13 +190,6 @@ const columns: TableProps["columns"] = [
       :coil="coil"
       :open="openCuttingPlan"
       @on-close="openCuttingPlan = false"
-    />
-
-    <NewRollingModal
-      v-if="openRolling && coil"
-      :coil="coil"
-      :open="openRolling"
-      @on-close="openRolling = false"
     />
 
     <CoilInfoModal

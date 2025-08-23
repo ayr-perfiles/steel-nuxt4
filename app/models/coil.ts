@@ -24,7 +24,7 @@ export interface ICoil extends IAudit {
 }
 
 // for movements
-export interface ICoilMovement extends Pick<ICoil, "id" | "serie"> {}
+export interface ICoilMovement extends Pick<ICoil, "id" | "serie" | "weight"> {}
 // end
 
 export const coilConverter = {
