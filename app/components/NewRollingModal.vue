@@ -23,7 +23,7 @@ const value1 = ref<Dayjs>(dayjs());
 
 // const formRef = ref();
 
-const { data: strips } = useCrudStrips(props.coil.id);
+const { stripsByCoil, pendingStripsByCoil } = useCrudCoils(props.coil.id);
 const { addAll: addAllMovements, pending } = useCrudMovements();
 
 const movements = reactive<IMovement[]>([]);
@@ -55,7 +55,7 @@ const handleOk = async () => {
 watchEffect(() => {
   Object.assign(
     movements,
-    strips.value
+    stripsByCoil.value
       .filter((item) => item.quantityAvailable > 0)
       .map((item) => {
         return {
@@ -132,7 +132,7 @@ const columns: TableProps["columns"] = [
     </template>
 
     <a-card>
-      <template v-if="strips.length < 1">
+      <template v-if="stripsByCoil.length < 1">
         <span>No hay cortes</span>
       </template>
       <template v-else>

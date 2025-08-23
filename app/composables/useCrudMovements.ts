@@ -95,10 +95,6 @@ export const useCrudMovements = () => {
 
         transaction.update(productRef, {
           stock: parseFloat(calcQuantityProduct.toFixed(4)),
-          price:
-            snapshot.data().averagePopulation !== null
-              ? null
-              : (snapshot.data().averagePopulation + resultCostPerUnit) / 2,
         });
         // end calcs products
       }
