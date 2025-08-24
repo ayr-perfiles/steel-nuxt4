@@ -1,3 +1,4 @@
+eC
 <script lang="ts" setup>
 import {
   BarChartOutlined,
@@ -57,10 +58,10 @@ const items: ItemType[] = reactive([
   // getItem("Envases", "Envases", () => h(GoldFilled)),
   // getItem("Marcas", "Brands", () => h(TagsOutlined)),
 
-  getItem("Almacén", "grp", null, [], "group"),
-  { type: "divider" },
+  // getItem("Almacén", "grp", null, [], "group"),
+  // { type: "divider" },
 
-  getItem("Almacén", "Store", () => h(StockOutlined)),
+  // getItem("Almacén", "Store", () => h(StockOutlined)),
 
   // getItem('Repartos', 'sub1', null, [
   //   getItem('Lista de repartos', 'Distributions'),

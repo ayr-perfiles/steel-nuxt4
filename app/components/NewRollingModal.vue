@@ -3,11 +3,7 @@ import _ from "lodash";
 import type { Dayjs } from "dayjs";
 import type { IStrip } from "~/models/strip";
 import { layout } from "~/constants";
-
-interface IFormState {
-  date: Dayjs;
-  quantity: number;
-}
+import type { IRolling } from "~/models/rolling";
 
 interface Props {
   open: boolean;
@@ -23,21 +19,17 @@ const emit = defineEmits<{
 const dayjs = useDayjs();
 
 const loading = ref(false);
-const formState = reactive<IFormState>({
+const formState = reactive<Partial<IRolling>>({
   date: dayjs(),
-  quantity: 1,
+  stripId: props.strip.id,
 });
 
-const { addRolling } = useCrudRolling();
+const { add: addRolling } = useCrudRollings();
 const handleOk = async () => {
   try {
     loading.value = true;
 
-    await addRolling(
-      props.strip,
-      _.cloneDeep(formState.date.toDate()),
-      _.cloneDeep(formState.quantity)
-    );
+    await addRolling(_.cloneDeep(formState as IRolling));
 
     notificationSuccess(`Se añadió`);
     emit("onClose");
@@ -88,7 +80,7 @@ const disabledDate = (current: Dayjs) => {
         </a-form-item>
 
         <a-form-item label="Bobina" name="coil">
-          <span>{{ strip.coil.serie }}</span>
+          <span>{{ strip.coil.serie }} | {{ strip.coil.weight }}kg</span>
         </a-form-item>
 
         <a-form-item label="Product" name="product">
@@ -110,6 +102,6 @@ const disabledDate = (current: Dayjs) => {
       </a-form>
     </a-card>
 
-    <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+    <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
   </a-modal>
 </template>

@@ -62,7 +62,7 @@ const columns: TableProps["columns"] = [
     dataIndex: "name",
     defaultSortOrder: "descend",
     sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+      (b.name as string).charCodeAt(0) - (a.name as string).charCodeAt(0),
     // customRender: ({ value, record }) => {
     //   return value + ' - ' + (record.waterOutlet === EWaterOutlet.spout ? 'CAÑO' : 'NORMAL')
     // },
@@ -89,7 +89,7 @@ const columns: TableProps["columns"] = [
     width: "150px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "", 4);
+      return value ? currency(value, "", 4) : "-";
     },
   },
   {

@@ -76,7 +76,7 @@ const columns: TableProps["columns"] = [
     key: "coil",
     dataIndex: "coil",
     customRender: ({ value }) => {
-      return value.serie;
+      return `${value.serie} | ${value.weight}kg`;
     },
   },
   {
