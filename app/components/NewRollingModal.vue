@@ -1,9 +1,13 @@
 <script lang="ts" setup>
 import _ from "lodash";
-import type { IMovement } from "~/models/movement";
 import type { Dayjs } from "dayjs";
 import type { IStrip } from "~/models/strip";
 import { layout } from "~/constants";
+
+interface IFormState {
+  date: Dayjs;
+  quantity: number;
+}
 
 interface Props {
   open: boolean;
@@ -19,14 +23,21 @@ const emit = defineEmits<{
 const dayjs = useDayjs();
 
 const loading = ref(false);
-const formState = reactive<Partial<IMovement>>({
+const formState = reactive<IFormState>({
   date: dayjs(),
-  strip: props.strip,
+  quantity: 1,
 });
 
+const { addRolling } = useCrudRolling();
 const handleOk = async () => {
   try {
     loading.value = true;
+
+    await addRolling(
+      props.strip,
+      _.cloneDeep(formState.date.toDate()),
+      _.cloneDeep(formState.quantity)
+    );
 
     notificationSuccess(`Se añadió`);
     emit("onClose");
@@ -36,19 +47,6 @@ const handleOk = async () => {
     loading.value = false;
   }
 };
-
-watchEffect(() => {
-  // Object.assign(
-  //   movements,
-  //   stripsByCoil.value
-  //     .filter((item) => item.quantityAvailable > 0)
-  //     .map((item) => {
-  //       return {
-  //         strip: item,
-  //       };
-  //     })
-  // );
-});
 
 // datepicker
 const disabledDate = (current: Dayjs) => {
