@@ -39,22 +39,22 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "CANTIDAD",
+    title: "FLEJES",
     key: "quantity",
     dataIndex: "quantity",
     width: "100px",
     align: "center",
   },
-  {
-    title: "PRECIO [S/]",
-    key: "price",
-    dataIndex: "price",
-    width: "100px",
-    align: "right",
-    customRender: ({ value }) => {
-      return currency(value, "", 4);
-    },
-  },
+  // {
+  //   title: "PRECIO [S/]",
+  //   key: "price",
+  //   dataIndex: "price",
+  //   width: "100px",
+  //   align: "right",
+  //   customRender: ({ value }) => {
+  //     return currency(value, "", 4);
+  //   },
+  // },
   {
     title: "",
     key: "action",

@@ -3,9 +3,19 @@ import type { Rule } from "ant-design-vue/es/form";
 import { layout } from "~/constants";
 import { type IVoucher } from "~/models/voucher";
 import _ from "lodash";
-import type { IStrip } from "~/models/strip";
 import type { TableProps } from "ant-design-vue";
-import type { IMovement } from "~/models/movement";
+import { ETypeVoucher } from "~/enums";
+import type { Dayjs } from "dayjs";
+import type { ICustomer } from "~/models/customer";
+
+interface IItemDetail {
+  productId: string;
+  productName: string;
+  productPrice: number;
+  price: number;
+  stock: number;
+  quantity: number;
+}
 
 interface Props {
   open: boolean;
@@ -18,10 +28,17 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const dayjs = useDayjs();
+
 const loading = ref(false);
 const formRef = ref();
-const movements = reactive<IMovement[]>([]);
-const formState = reactive<Partial<IVoucher>>({});
+const items = reactive<Partial<IItemDetail>[]>([]);
+const formState = reactive<Partial<IVoucher>>({
+  date: dayjs(),
+  numberVoucher: 0,
+  typeVoucher: ETypeVoucher.sale,
+  details: [],
+});
 
 onMounted(() => {
   if (props.voucher) {
@@ -30,41 +47,87 @@ onMounted(() => {
 });
 
 const rules: Record<string, Rule[]> = {
-  identity: [
+  date: [
     {
       required: true,
-      message: "Ingresar RUC/DNI!",
+      message: "Ingresar fecha",
     },
   ],
-  businessEntity: [
+  customer: [
     {
       required: true,
-      message: "Ingresar razón social!",
+      message: "Ingresar cliente!",
     },
   ],
 };
+
+const totals = computed(() => {
+  const totalBorrow = items
+    .map((item) => (item.quantity || 0) * (item.price || 0))
+    .reduce((prev: number, val: number) => prev + val, 0);
+
+  return {
+    totalBorrow: getNumberRound(totalBorrow, 2),
+  };
+});
 
 const { add: addVoucher, update: updateVoucher } = useCrudVouchers();
 const { data: products, pending } = useCrudProducts();
 
 const handleOk = () => {
+  if (totals.value.totalBorrow === 0) {
+    modalError("Agregar al menos un producto");
+    return;
+  }
+
   formRef.value
     .validate()
     .then(async () => {
       try {
         loading.value = true;
+
+        const unReactiveForm = _.cloneDeep(formState);
+        const unReactiveItems = _.cloneDeep(items);
+
+        const objDetails = _.cloneDeep(
+          unReactiveItems
+            .filter((item) => item.quantity && item.price)
+            .map(
+              (item) =>
+                ({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  igv: 1.18,
+                  rode: getNumberRound(
+                    (item.quantity || 0) * (item.price || 0),
+                    5
+                  ),
+                } as IVoucher["details"][0])
+            )
+        );
+
+        unReactiveForm.date = (unReactiveForm.date as Dayjs).toDate();
+        unReactiveForm.total = totals.value.totalBorrow;
+        unReactiveForm.details = objDetails;
+        unReactiveForm.customer = {
+          id: unReactiveForm.customer?.id || "",
+          businessEntity: unReactiveForm.customer?.businessEntity || "",
+        };
+
+        console.log("unReactiveForm", unReactiveForm);
+
         if (props.voucher) {
-          await updateVoucher(
-            props.voucher.id,
-            _.cloneDeep(formState as IVoucher)
-          );
+          await updateVoucher(props.voucher.id, unReactiveForm as IVoucher);
         } else {
-          await addVoucher(_.cloneDeep(formState as IVoucher));
+          await addVoucher(unReactiveForm as IVoucher);
         }
-        // notificationSuccess(`Vouchero ${props.voucher ? "editado" : "creado"}`);
+        notificationSuccess(
+          `Comprobante ${props.voucher ? "editado" : "creado"}`
+        );
         emit("onClose");
       } catch (error: any) {
-        // modalError(error.message);
+        modalError(error.message);
       } finally {
         loading.value = false;
       }
@@ -76,19 +139,26 @@ const handleOk = () => {
 
 watchEffect(() => {
   Object.assign(
-    movements,
-    products.value.map((item) => {
-      return {
-        product: {
-          id: item.id,
-          name: item.name,
-          width: item.width,
-        },
-        stock: item.stock,
-      };
-    })
+    items,
+    products.value
+      .filter((item) => item.stock > 0)
+      .map((item) => {
+        return {
+          productId: item.id,
+          productName: item.name,
+          productPrice: item.price || 0,
+          price: item.price || 0,
+          stock: item.stock || 0,
+          // quantity: 0,
+        };
+      })
   );
 });
+
+const disabledDate = (current: Dayjs) => {
+  // Can not select days before today and today
+  return current && current > dayjs().endOf("day");
+};
 
 const columns: TableProps["columns"] = [
   {
@@ -103,13 +173,13 @@ const columns: TableProps["columns"] = [
 
   {
     title: "PRODUCTO",
-    key: "product",
-    dataIndex: "product",
-    sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
-    customRender: ({ value }) => {
-      return `${value.name}`;
-    },
+    key: "productName",
+    dataIndex: "productName",
+    // sorter: (a: any, b: any) =>
+    //   (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+    // customRender: ({ value }) => {
+    //   return `${value.name}`;
+    // },
   },
   {
     title: "STOCK",
@@ -124,6 +194,27 @@ const columns: TableProps["columns"] = [
     dataIndex: "quantity",
     width: "100px",
     align: "center",
+  },
+  {
+    title: "PRECIO",
+    key: "price",
+    dataIndex: "price",
+    width: "100px",
+    align: "right",
+  },
+  {
+    title: "MONTO",
+    key: "total",
+    dataIndex: "total",
+    width: "100px",
+    align: "right",
+    customRender: ({ record }) => {
+      const total = getNumberRound(
+        (record.quantity || 0) * (record.price || 0),
+        5
+      );
+      return currency(total, "", 5);
+    },
   },
 ];
 </script>
@@ -149,50 +240,70 @@ const columns: TableProps["columns"] = [
       </a-tag>
     </template>
     <a-card>
-      <!-- <a-form ref="formRef" :model="formState" :rules="rules" v-bind="layout">
-        <a-form-item label="RUC/DNI" name="identity">
-          <a-input
-            v-model:value="formState.identity"
-            placeholder="Ingresar RUC/DNI"
-          ></a-input>
-        </a-form-item>
+      <a-card title="Datos del comprobante" class="w-[600px] shadow-md">
+        <a-form ref="formRef" :model="formState" :rules="rules" v-bind="layout">
+          <a-form-item label="Fecha" name="date">
+            <a-date-picker
+              v-model:value="formState.date as Dayjs"
+              format="DD-MM-YYYY HH:mm:ss"
+              :disabled-date="disabledDate"
+              :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
+            />
+          </a-form-item>
 
-        <a-form-item label="Razón social" name="businessEntity">
-          <a-input
-            v-model:value="formState.businessEntity"
-            class="w-full"
-            placeholder="Ingresar razón social"
-          ></a-input>
-        </a-form-item>
+          <a-form-item label="Cliente" name="customer">
+            <SelectCustomer v-model="formState.customer as ICustomer" />
+          </a-form-item>
+        </a-form>
+      </a-card>
 
-        <a-form-item label="Dirección" name="address">
-          <a-input
-            v-model:value="formState.address"
-            class="w-full"
-            placeholder="Ingresar dirección"
-          ></a-input>
-        </a-form-item>
-    </a-form> -->
-
-      <a-table
-        :row-key="(item: IStrip) => item.product.id"
-        :columns="columns"
-        :data-source="movements"
+      <a-card
+        title="Detalle de productos"
+        class="mt-4 shadow-md w-[900px]"
         :loading="pending"
-        bordered
-        :pagination="false"
       >
-        <template #bodyCell="{ column, text, record }">
-          <template v-if="['quantity'].includes(column.dataIndex as string)">
-            <div>
-              <a-input-number v-model:value="record.quantity"></a-input-number>
-            </div>
+        <a-table
+          row-key="productName"
+          :columns="columns"
+          :data-source="items"
+          :loading="pending"
+          bordered
+          :pagination="false"
+        >
+          <template #bodyCell="{ column, text, record }">
+            <template
+              v-if="['quantity', 'price'].includes(column.dataIndex as string)"
+            >
+              <div>
+                <a-input-number
+                  :min="column.dataIndex === 'quantity' ? 1 : 0"
+                  :max="
+                    column.dataIndex === 'quantity' ? record.stock : undefined
+                  "
+                  v-model:value="record[column.dataIndex as keyof IItemDetail]"
+                ></a-input-number>
+              </div>
+            </template>
           </template>
-        </template>
-      </a-table>
+
+          <template #summary>
+            <a-table-summary-row>
+              <a-table-summary-cell col-span="5" align="right">
+                <a-typography-text type="danger">TOTAL</a-typography-text>
+              </a-table-summary-cell>
+              <a-table-summary-cell align="right">
+                <a-typography-text type="danger">{{
+                  totals.totalBorrow
+                }}</a-typography-text>
+              </a-table-summary-cell>
+            </a-table-summary-row>
+          </template>
+        </a-table>
+      </a-card>
     </a-card>
 
     <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
+    <!-- <pre>{{ JSON.stringify(items, null, 2) }}</pre> -->
   </a-modal>
 </template>
 

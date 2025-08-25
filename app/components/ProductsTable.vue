@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
+const openMovements = ref(false);
 const product = ref<IProduct>();
 
 const { data: products, pending, remove } = useCrudProducts();
@@ -37,12 +38,9 @@ const handleUpdate = (productSelected: any) => {
   product.value = productSelected;
 };
 
-const handleSelected = (product: any) => {
-  emit("onSelected", {
-    id: product.id,
-    name: product.name,
-    stock: product.stock,
-  });
+const handleOpenMovements = (productSelected: any) => {
+  openMovements.value = true;
+  product.value = productSelected;
 };
 
 const columns: TableProps["columns"] = [
@@ -62,17 +60,20 @@ const columns: TableProps["columns"] = [
     dataIndex: "name",
     defaultSortOrder: "descend",
     sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+      (b.name as string).charCodeAt(0) - (a.name as string).charCodeAt(0),
     // customRender: ({ value, record }) => {
     //   return value + ' - ' + (record.waterOutlet === EWaterOutlet.spout ? 'CAÑO' : 'NORMAL')
     // },
   },
   {
-    title: "ANCHO [mm]",
+    title: "ANCHO",
     key: "width",
     dataIndex: "width",
     width: "100px",
-    align: "center",
+    align: "right",
+    customRender: ({ value }) => {
+      return value > 0 ? `${value} [mm]` : "-";
+    },
   },
 
   {
@@ -89,7 +90,7 @@ const columns: TableProps["columns"] = [
     width: "150px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "", 4);
+      return value ? currency(value, "", 4) : "-";
     },
   },
   {
@@ -111,9 +112,11 @@ const columns: TableProps["columns"] = [
       :scroll="{ x: 1100 }"
       bordered
     >
-      <template #bodyCell="{ column, text, record }">
+      <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
-          <a-tag v-if="text">{{ text }}</a-tag>
+          <a v-if="value > 0" @click="handleOpenMovements(record)">
+            {{ text }}
+          </a>
           <span v-else>-</span>
         </template>
 
@@ -137,5 +140,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <MovementsModal
+      v-if="openMovements && product"
+      :open="openMovements"
+      :product="product"
+      @on-close="openMovements = false"
+    />
   </div>
 </template>

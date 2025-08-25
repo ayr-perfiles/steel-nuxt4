@@ -4,33 +4,33 @@ import {
   type DocumentData,
   type SnapshotOptions,
 } from "firebase/firestore";
-import type { IProductMovement } from "./product";
 import type { IAudit } from "./audit";
-import type { ICoilMovement } from "./coil";
-import type { IVoucherMovement } from "./voucher";
 import type { Dayjs } from "dayjs";
 
+interface IDetailMovement {
+  productId: string;
+  quantity: number;
+  description: string;
+}
 export interface IMovement extends IAudit {
   id: string;
   date: Dayjs | Timestamp | Date;
-  coil: ICoilMovement;
-  product: IProductMovement;
-  voucher: IVoucherMovement;
-  quantity: number;
-  price: number;
-  description: string;
+  rollingId: string;
+  voucherId: string;
+  userId: string;
+  productIds: string[];
+  details: IDetailMovement[];
 }
 
 export const movementConverter = {
   toFirestore: (movement: IMovement) => {
     return {
       date: movement.date,
-      coil: movement.coil,
-      product: movement.product,
-      quantity: movement.quantity,
-      voucher: movement.voucher || null,
-      price: movement.price || null,
-      description: movement.description || null,
+      rollingId: movement.rollingId || null,
+      voucherId: movement.voucherId || null,
+      userId: movement.userId || null,
+      productIds: movement.productIds,
+      details: movement.details,
       createdAt: movement.createdAt,
       updatedAt: movement.updatedAt || null,
     };

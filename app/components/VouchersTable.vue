@@ -73,29 +73,34 @@ const columns: TableProps["columns"] = [
     title: "FECHA",
     key: "date",
     dataIndex: "date",
-    width: "100px",
+    width: "120px",
     align: "center",
+    defaultSortOrder: "descend",
+    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY");
+      return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
   },
   {
     title: "NUM",
-    key: "number",
-    dataIndex: "number",
+    key: "numberVoucher",
+    dataIndex: "numberVoucher",
     width: "100px",
     align: "center",
   },
   {
     title: "RAZÓN SOCIAL",
-    key: "businessEntity",
-    dataIndex: "businessEntity",
+    key: "customer",
+    dataIndex: "customer",
+    customRender: ({ value }) => {
+      return value.businessEntity;
+    },
   },
-  {
-    title: "DESCRIPCIÓN",
-    key: "description",
-    dataIndex: "description",
-  },
+  // {
+  //   title: "DESCRIPCIÓN",
+  //   key: "description",
+  //   dataIndex: "description",
+  // },
   {
     title: "TOTAL",
     key: "total",
@@ -126,6 +131,10 @@ const columns: TableProps["columns"] = [
         <template v-if="column.dataIndex === 'stock'">
           <a-tag v-if="text">{{ text }}</a-tag>
           <span v-else>-</span>
+        </template>
+
+        <template v-else-if="column.key === 'numberVoucher'">
+          <a class="text-blue-600 hover:underline cursor-pointer">{{ text }}</a>
         </template>
 
         <template v-else-if="column.key === 'action'">

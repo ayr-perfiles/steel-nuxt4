@@ -5,30 +5,45 @@ import {
   type SnapshotOptions,
 } from "firebase/firestore";
 import type { IAudit } from "./audit";
-import type { ICustomer } from "./customer";
+import type { ICustomerVoucher } from "./customer";
+import type { ETypeVoucher } from "~/enums";
 import type { Dayjs } from "dayjs";
 
+interface IDetailVoucher {
+  productId: string;
+  quantity: number;
+  price: number;
+  igv: number;
+  rode: number;
+}
 export interface IVoucher extends IAudit {
   id: string;
   date: Dayjs | Timestamp | Date;
-  number: number;
-  customer: ICustomer;
+  typeVoucher: ETypeVoucher;
+  numberVoucher: number;
+  customer: ICustomerVoucher;
   description: string;
   total: number;
+  details: IDetailVoucher[];
+  userId: string;
 }
 
 // for movement
-export interface IVoucherMovement extends Pick<IVoucher, "id" | "number"> {}
+export interface IVoucherMovement
+  extends Pick<IVoucher, "id" | "numberVoucher"> {}
 // end
 
 export const voucherConverter = {
   toFirestore: (voucher: IVoucher) => {
     return {
       date: voucher.date,
-      number: voucher.number,
+      numberVoucher: voucher.numberVoucher,
+      typeVoucher: voucher.typeVoucher,
       customer: voucher.customer,
-      description: voucher.description,
+      description: voucher.description || null,
       total: voucher.total,
+      details: voucher.details,
+      userId: voucher.userId || null,
       createdAt: voucher.createdAt,
       updatedAt: voucher.updatedAt || null,
     };

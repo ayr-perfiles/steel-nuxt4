@@ -41,6 +41,7 @@ export const useCrudVouchers = () => {
   const add = async (voucher: IVoucher) => {
     await addDoc(vouchersRef, {
       ...voucher,
+      date: Timestamp.fromDate(voucher.date as Date),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

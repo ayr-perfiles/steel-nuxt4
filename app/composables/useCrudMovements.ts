@@ -1,62 +1,35 @@
-// composables/useMovements.ts
-import { useCollection } from "vuefire";
-import {
-  collection,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-  writeBatch,
-  Timestamp,
-} from "firebase/firestore";
-import { movementConverter, type IMovement } from "~/models/movement";
+import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
+import { movementConverter } from "~/models/movement";
 
 export const useCrudMovements = () => {
   const dbClient = useFirestore();
-  const movementsRef = collection(dbClient, "movements").withConverter(
+  const movementRef = collection(dbClient, "movements").withConverter(
     movementConverter
   );
-  const { data, pending } = useCollection(movementsRef, {
-    ssrKey: "movements",
-  });
 
-  const addAll = async (strips: IMovement[]) => {
-    const batch = writeBatch(dbClient);
-
-    await Promise.all([
-      strips.map((item) => {
-        batch.set(doc(movementsRef), {
-          ...item,
-          date: Timestamp.fromDate(item.date as Date),
-          description: item.product.name,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }),
-    ]);
-
-    await batch.commit();
-  };
-
-  const add = async (movement: IMovement) => {
-    await addDoc(movementsRef, {
-      ...movement,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-  };
-
-  const update = async (id: string, data: IMovement) => {
-    const movementDoc = doc(dbClient, "movements", id).withConverter(
-      movementConverter
+  const getMovementsByProductId = async (productId: string) => {
+    const movements: any[] = [];
+    const q = query(
+      movementRef,
+      where("productIds", "array-contains", productId),
+      orderBy("date", "desc")
     );
-    await updateDoc(movementDoc, data);
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      const mov = doc.data();
+      const detail = mov.details.find((d) => d.productId === productId);
+      if (!detail) return;
+
+      movements.push({
+        date: mov.date,
+        origin: mov.rollingId ? "rolling" : "voucher",
+        quantity: detail.quantity,
+        description: detail.description,
+      });
+    });
+
+    return movements;
   };
 
-  const remove = async (id: string) => {
-    await deleteDoc(doc(dbClient, "movements", id));
-  };
-
-  return { data, pending, addAll, add, update, remove };
+  return { getMovementsByProductId };
 };

@@ -3,3 +3,7 @@ export enum EStatusCoil {
   process = "process",
   completed = "completed",
 }
+
+export enum ETypeVoucher {
+  sale = "sale",
+}

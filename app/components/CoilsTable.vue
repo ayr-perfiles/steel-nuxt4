@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
-import { EStatusCoil } from "~/enums";
 import type { ICoil } from "~/models/coil";
 
 interface Coil {
@@ -18,24 +17,23 @@ const dayjs = useDayjs();
 
 const open = ref(false);
 const openCuttingPlan = ref(false);
-const openRolling = ref(false);
 const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
 const { data: coils, pending, remove } = useCrudCoils();
 
 const handleRemove = (id: string) => {
-  // try {
-  //   Modal.confirm({
-  //     title: "Eliminar coilo?",
-  //     onOk: async () => {
-  //       await remove(db, id)
-  //       notificationSuccess("coilo eliminado")
-  //     },
-  //   })
-  // } catch (error: any) {
-  //   modalError(error.message)
-  // }
+  Modal.confirm({
+    title: "Eliminar Bobina?",
+    onOk: async () => {
+      try {
+        await remove(id);
+        notificationSuccess("Bobina eliminado");
+      } catch (error: any) {
+        modalError(error.message);
+      }
+    },
+  });
 };
 
 const handleUpdate = (coilSelected: any) => {
@@ -48,22 +46,9 @@ const handleOpenCuttingPlan = (coilSelected: any) => {
   coil.value = coilSelected;
 };
 
-const handleOpenRolling = (coilSelected: any) => {
-  openRolling.value = true;
-  coil.value = coilSelected;
-};
-
 const handleInfoCoil = (coilSelected: any) => {
   openInfoCoil.value = true;
   coil.value = coilSelected;
-};
-
-const handleSelected = (coil: any) => {
-  emit("onSelected", {
-    id: coil.id,
-    name: coil.name,
-    stock: coil.stock,
-  });
 };
 
 const columns: TableProps["columns"] = [
@@ -78,12 +63,14 @@ const columns: TableProps["columns"] = [
   },
   {
     title: "FECHA",
-    key: "createdAt",
-    dataIndex: "createdAt",
-    width: "100px",
+    key: "date",
+    dataIndex: "date",
+    width: "120px",
     align: "center",
+    defaultSortOrder: "descend",
+    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY");
+      return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
   },
   {
@@ -97,36 +84,44 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "ANCHO [mm]",
+    title: "ANCHO",
     key: "width",
     dataIndex: "width",
     width: "100px",
+    align: "right",
+    customRender: ({ value }) => {
+      return value > 0 ? `${value} [mm]` : "-";
+    },
   },
 
   {
-    title: "PESO [kg]",
+    title: "PESO",
     key: "weight",
     dataIndex: "weight",
-    width: "100px",
-  },
-  {
-    title: "PRECIO POR [kg]",
-    key: "price",
-    dataIndex: "price",
-    width: "120px",
+    width: "90px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "", 4);
+      return value ? `${value} [kg]` : "-";
     },
   },
   {
-    title: "PRECIO TOTAL [S/]",
+    title: "PRECIO POR X KG",
+    key: "pricePerKilogram",
+    dataIndex: "pricePerKilogram",
+    width: "120px",
+    align: "right",
+    customRender: ({ value }) => {
+      return value ? `${currency(value, "")} [PEN]` : "-";
+    },
+  },
+  {
+    title: "PRECIO TOTAL",
     key: "total",
     dataIndex: "total",
     width: "120px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "");
+      return value ? `${currency(value, "")} [PEN]` : "-";
     },
   },
   {
@@ -176,14 +171,6 @@ const columns: TableProps["columns"] = [
         </template>
 
         <template v-else-if="column.key === 'action'">
-          <a-button
-            type="link"
-            @click.prevent="handleOpenRolling(record)"
-            :disabled="!record.isCutting"
-          >
-            Rolar
-          </a-button>
-          <a-divider type="vertical"></a-divider>
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
             <a @click.prevent>
               Más
@@ -195,7 +182,7 @@ const columns: TableProps["columns"] = [
                   <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
                 </a-menu-item>
 
-                <a-menu-item>
+                <a-menu-item :disabled="record.isCutting">
                   <a @click="handleUpdate(record)">Editar</a>
                 </a-menu-item>
                 <a-menu-item>
@@ -208,18 +195,18 @@ const columns: TableProps["columns"] = [
       </template>
     </a-table>
 
+    <NewCoilModal
+      v-if="open && coil"
+      :coil="coil"
+      :open="open"
+      @on-close="open = false"
+    />
+
     <NewCuttingModal
       v-if="openCuttingPlan && coil"
       :coil="coil"
       :open="openCuttingPlan"
       @on-close="openCuttingPlan = false"
-    />
-
-    <NewMovementModal
-      v-if="openRolling && coil"
-      :coil="coil"
-      :open="openRolling"
-      @on-close="openRolling = false"
     />
 
     <CoilInfoModal

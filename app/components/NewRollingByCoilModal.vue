@@ -23,7 +23,7 @@ const value1 = ref<Dayjs>(dayjs());
 
 // const formRef = ref();
 
-const { data: strips } = useCrudStrips(props.coil.id);
+const { stripsByCoil, pendingStripsByCoil } = useCrudCoils(props.coil.id);
 const { addAll: addAllMovements, pending } = useCrudMovements();
 
 const movements = reactive<IMovement[]>([]);
@@ -44,7 +44,6 @@ const handleOk = async () => {
 
       notificationSuccess(`Se añadió`);
       emit("onClose");
-      console.log("finish!");
     } catch (error: any) {
       modalError(error.message);
     } finally {
@@ -56,18 +55,13 @@ const handleOk = async () => {
 watchEffect(() => {
   Object.assign(
     movements,
-    strips.value.map((item) => {
-      return {
-        coil: {
-          id: props.coil.id,
-          serie: props.coil.serie,
-        },
-        product: {
-          id: item.product.id,
-          name: item.product.name,
-        },
-      } as IMovement;
-    })
+    stripsByCoil.value
+      .filter((item) => item.quantityAvailable > 0)
+      .map((item) => {
+        return {
+          strip: item,
+        };
+      })
   );
 });
 
@@ -91,12 +85,13 @@ const disabledDate = (current: Dayjs) => {
 
 const columns: TableProps["columns"] = [
   {
-    title: "ITEM",
-    key: "item",
-    width: "80px",
+    title: "CANTIDAD FLEJES",
+    key: "quantityStrips",
+    dataIndex: "quantityStrips",
+    width: "100px",
     align: "center",
-    customRender: ({ index }) => {
-      return _.padStart(`${index + 1}`, 2, "0");
+    customRender: ({ record }) => {
+      return record.strip.quantityAvailable;
     },
   },
 
@@ -105,11 +100,8 @@ const columns: TableProps["columns"] = [
     key: "product",
     dataIndex: "product",
     defaultSortOrder: "descend",
-    sorter: (a: any, b: any) =>
-      (a.product.name as string).charCodeAt(0) -
-      (b.product.name as string).charCodeAt(0),
-    customRender: ({ value }) => {
-      return `${value.name}`;
+    customRender: ({ record }) => {
+      return record.strip.product.name;
     },
   },
   {
@@ -140,7 +132,7 @@ const columns: TableProps["columns"] = [
     </template>
 
     <a-card>
-      <template v-if="strips.length < 1">
+      <template v-if="stripsByCoil.length < 1">
         <span>No hay cortes</span>
       </template>
       <template v-else>
@@ -160,7 +152,7 @@ const columns: TableProps["columns"] = [
         </a-form>
 
         <a-table
-          :row-key="(item: IMovement) => item.product.id"
+          :row-key="(item: IMovement) => item.strip.product.id"
           :columns="columns"
           :data-source="movements"
           :loading="pending"
@@ -180,6 +172,6 @@ const columns: TableProps["columns"] = [
       </template>
     </a-card>
 
-    <!-- <pre>{{ JSON.stringify(movements, null, 2) }}</pre> -->
+    <pre>{{ JSON.stringify(movements, null, 2) }}</pre>
   </a-modal>
 </template>

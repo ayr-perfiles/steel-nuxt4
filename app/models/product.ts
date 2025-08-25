@@ -10,6 +10,7 @@ export interface IProduct {
   width: number;
   stock: number;
   price: number;
+  quantityRolling: number; // not stored in db
 }
 
 // for movements
@@ -24,6 +25,7 @@ export const productConverter = {
       width: product.width,
       stock: product.stock,
       price: product.price || null,
+      quantityRolling: product.quantityRolling || null,
     };
   },
 
