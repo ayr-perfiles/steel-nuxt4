@@ -23,17 +23,17 @@ const coil = ref<ICoil>();
 const { data: coils, pending, remove } = useCrudCoils();
 
 const handleRemove = (id: string) => {
-  // try {
-  //   Modal.confirm({
-  //     title: "Eliminar coilo?",
-  //     onOk: async () => {
-  //       await remove(db, id)
-  //       notificationSuccess("coilo eliminado")
-  //     },
-  //   })
-  // } catch (error: any) {
-  //   modalError(error.message)
-  // }
+  Modal.confirm({
+    title: "Eliminar Bobina?",
+    onOk: async () => {
+      try {
+        await remove(id);
+        notificationSuccess("Bobina eliminado");
+      } catch (error: any) {
+        modalError(error.message);
+      }
+    },
+  });
 };
 
 const handleUpdate = (coilSelected: any) => {
@@ -98,30 +98,30 @@ const columns: TableProps["columns"] = [
     title: "PESO",
     key: "weight",
     dataIndex: "weight",
-    width: "100px",
+    width: "90px",
     align: "right",
     customRender: ({ value }) => {
       return value ? `${value} [kg]` : "-";
     },
   },
   {
-    title: "PRECIO POR X KG [S/]",
+    title: "PRECIO POR X KG",
     key: "pricePerKilogram",
     dataIndex: "pricePerKilogram",
-    width: "140px",
+    width: "120px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "", 4);
+      return value ? `${currency(value, "")} [PEN]` : "-";
     },
   },
   {
-    title: "PRECIO TOTAL [S/]",
+    title: "PRECIO TOTAL",
     key: "total",
     dataIndex: "total",
     width: "120px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "");
+      return value ? `${currency(value, "")} [PEN]` : "-";
     },
   },
   {
@@ -182,7 +182,7 @@ const columns: TableProps["columns"] = [
                   <a @click="handleOpenCuttingPlan(record)">Plan de corte</a>
                 </a-menu-item>
 
-                <a-menu-item>
+                <a-menu-item :disabled="record.isCutting">
                   <a @click="handleUpdate(record)">Editar</a>
                 </a-menu-item>
                 <a-menu-item>
@@ -194,6 +194,13 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <NewCoilModal
+      v-if="open && coil"
+      :coil="coil"
+      :open="open"
+      @on-close="open = false"
+    />
 
     <NewCuttingModal
       v-if="openCuttingPlan && coil"

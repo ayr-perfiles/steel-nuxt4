@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const open = ref(false);
+const openMovements = ref(false);
 const product = ref<IProduct>();
 
 const { data: products, pending, remove } = useCrudProducts();
@@ -37,12 +38,9 @@ const handleUpdate = (productSelected: any) => {
   product.value = productSelected;
 };
 
-const handleSelected = (product: any) => {
-  emit("onSelected", {
-    id: product.id,
-    name: product.name,
-    stock: product.stock,
-  });
+const handleOpenMovements = (productSelected: any) => {
+  openMovements.value = true;
+  product.value = productSelected;
 };
 
 const columns: TableProps["columns"] = [
@@ -116,7 +114,7 @@ const columns: TableProps["columns"] = [
     >
       <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
-          <a v-if="value > 0">
+          <a v-if="value > 0" @click="handleOpenMovements(record)">
             {{ text }}
           </a>
           <span v-else>-</span>
@@ -142,5 +140,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <MovementsModal
+      v-if="openMovements && product"
+      :open="openMovements"
+      :product="product"
+      @on-close="openMovements = false"
+    />
   </div>
 </template>

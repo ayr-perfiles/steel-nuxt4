@@ -6,6 +6,7 @@ import {
   sum,
   where,
 } from "firebase/firestore";
+import { productConverter } from "~/models/product";
 import { stripConverter } from "~/models/strip";
 
 export const useReportStrips = () => {

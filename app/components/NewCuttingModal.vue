@@ -26,7 +26,7 @@ const { addAll: addAllStrips } = useCrudStrips(props.coil.id);
 
 const strips = reactive<IStrip[]>([]);
 
-const calcWeightStripsTotal = computed(() =>
+const weightStripsTotal = computed(() =>
   strips
     .filter((item) => item.quantity)
     .map(
@@ -39,7 +39,7 @@ const calcWeightStripsTotal = computed(() =>
 );
 
 const calcPriceReal = computed(
-  () => props.coil.total / calcWeightStripsTotal.value
+  () => props.coil.total / weightStripsTotal.value
 );
 
 const handleCalCost = (val: number | string) => {
@@ -148,33 +148,25 @@ const columns: TableProps["columns"] = [
     dataIndex: "weightStrips",
     width: "100px",
     align: "right",
-
-    // customRender: ({ record }) =>
-    //   record.quantity
-    //     ? currency(
-    //         (props.coil.weight / (props.coil.width / 1000)) *
-    //           (record.product.width / 1000) *
-    //           record.quantity,
-    //         "",
-    //         4
-    //       )
-    //     : "-",
+    customRender: ({ value }) => {
+      return value ? `${value} [kg]` : "-";
+    },
   },
   {
-    title: "PRECIO REAL POR [kg]",
+    title: "PRECIO REAL X KG [S/]",
     key: "priceRealPerKilogram",
     dataIndex: "priceRealPerKilogram",
-    width: "100px",
+    width: "150px",
     align: "right",
     // customRender: ({ value }) => {
     //   return currency(value, "", 4);
     // },
   },
   {
-    title: "PRECIO POR FLEJE",
+    title: "PRECIO X FLEJE [S/]",
     key: "pricePerStrip",
     dataIndex: "pricePerStrip",
-    width: "100px",
+    width: "130px",
     align: "right",
     // customRender: ({ value }) => {
     //   return currency(value, "", 4);
@@ -209,6 +201,9 @@ const columns: TableProps["columns"] = [
     :mask-closable="false"
     :confirm-loading="loading"
     :width="1000"
+    :ok-button-props="{
+      disabled: weightStripsTotal > coil.weight || weightStripsTotal === 0,
+    }"
     @cancel="$emit('onClose')"
     @ok="handleOk"
   >
@@ -235,7 +230,7 @@ const columns: TableProps["columns"] = [
         <a-form-item>
           <p>Bobina serie: {{ coil.serie }}</p>
           <p>Bobina preso: {{ coil.weight }}</p>
-          <p>Peso flejes: {{ currency(calcWeightStripsTotal, "", 4) }}</p>
+          <p>Peso flejes: {{ currency(weightStripsTotal, "", 4) }}</p>
           <!-- <p>
             <strong>
               calculo de bobina: {{ currency(calcCoil, "", 4) }}
@@ -246,7 +241,7 @@ const columns: TableProps["columns"] = [
           </p> -->
           <p>
             <strong> Precio real: {{ currency(calcPriceReal, "", 4) }} </strong>
-            {{ `| formula: ${props.coil.total} / ${calcWeightStripsTotal}` }}
+            {{ `| formula: ${props.coil.total} / ${weightStripsTotal}` }}
           </p>
         </a-form-item>
       </a-form>
@@ -270,9 +265,31 @@ const columns: TableProps["columns"] = [
             </div>
           </template>
         </template>
+
+        <template #summary>
+          <a-table-summary-row>
+            <a-table-summary-cell col-span="4" align="right">
+              <p>Peso flejes: {{ weightStripsTotal }} [kg]</p>
+              <p>Peso bobina: {{ coil.weight }} [kg]</p>
+              <a-divider />
+              <p :class="weightStripsTotal > coil.weight ? 'text-red-500' : ''">
+                Peso dif: {{ coil.weight - weightStripsTotal }} [kg]
+              </p>
+            </a-table-summary-cell>
+            <a-table-summary-cell col-span="2"> </a-table-summary-cell>
+          </a-table-summary-row>
+        </template>
       </a-table>
+
+      <br />
+
+      <a-alert
+        v-if="weightStripsTotal > coil.weight"
+        :message="`El peso total de los flejes (${weightStripsTotal} [kg]) excede el peso de la bobina (${coil.weight} [kg])`"
+        type="error"
+      />
     </a-card>
 
-    <pre>{{ JSON.stringify(strips, null, 2) }}</pre>
+    <!-- <pre>{{ JSON.stringify(strips, null, 2) }}</pre> -->
   </a-modal>
 </template>

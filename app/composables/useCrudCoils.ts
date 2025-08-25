@@ -10,9 +10,13 @@ import {
   query,
   where,
   Timestamp,
+  getDoc,
+  getDocs,
+  writeBatch,
 } from "firebase/firestore";
 import { coilConverter, type ICoil } from "~/models/coil";
 import { stripConverter } from "~/models/strip";
+import { EStatusCoil } from "~/enums";
 
 export const useCrudCoils = (id?: string) => {
   const dbClient = useFirestore();
@@ -46,19 +50,52 @@ export const useCrudCoils = (id?: string) => {
       ...coil,
       date: Timestamp.fromDate(coil.date as Date),
       serie: coil.serie.toUpperCase(),
-      total: parseFloat((coil.pricePerKilogram * coil.weight).toFixed(2)),
+      total: getNumberRound(coil.pricePerKilogram * coil.weight, 2),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
   };
 
-  const update = async (id: string, data: ICoil) => {
+  const update = async (id: string, coil: ICoil) => {
     const coilDoc = doc(dbClient, "coils", id).withConverter(coilConverter);
-    await updateDoc(coilDoc, data);
+    await updateDoc(coilDoc, {
+      ...coil,
+      date: Timestamp.fromDate(coil.date as Date),
+      serie: coil.serie.toUpperCase(),
+      total: getNumberRound(coil.pricePerKilogram * coil.weight, 2),
+      updatedAt: serverTimestamp(),
+    });
   };
 
   const remove = async (id: string) => {
-    await deleteDoc(doc(dbClient, "coils", id));
+    const coilRef = doc(dbClient, "coils", id).withConverter(coilConverter);
+    const coilData = await getDoc(coilRef).then((doc) => doc.data());
+    if (!coilData) throw new Error("No existe la bobina");
+
+    if (coilData.status !== EStatusCoil.completed)
+      return await deleteDoc(doc(dbClient, "coils", id));
+
+    const stripsRef = collection(dbClient, "strips").withConverter(
+      stripConverter
+    );
+    const q = query(stripsRef, where("coil.id", "==", id));
+    const stripsSnapshot = await getDocs(q);
+
+    for (const stripDoc of stripsSnapshot.docs) {
+      const stripData = stripDoc.data();
+      if (stripData.quantityAvailable < stripData.quantity)
+        throw new Error("No se puede eliminar una bobina con flejes rolados");
+    }
+
+    const batch = writeBatch(dbClient);
+    stripsSnapshot.docs.forEach((stripDoc) => {
+      batch.delete(stripDoc.ref);
+    });
+    batch.delete(coilRef);
+
+    await batch.commit();
+
+    // throw new Error("No se puede eliminar una bobina cortada");
   };
 
   return {

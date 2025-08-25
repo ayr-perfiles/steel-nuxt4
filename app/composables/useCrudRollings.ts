@@ -5,6 +5,9 @@ import {
   serverTimestamp,
   Timestamp,
   addDoc,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { rollingConverter, type IRolling } from "~/models/rolling";
 
@@ -21,5 +24,17 @@ export const useCrudRollings = () => {
       updatedAt: serverTimestamp(),
     });
   };
-  return { add };
+
+  const getRollingsByStripId = async (stripId: string) => {
+    const rollings: IRolling[] = [];
+    const q = query(rollingRef, where("stripId", "==", stripId));
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach((doc) => {
+      rollings.push(doc.data());
+    });
+    return rollings;
+  };
+
+  return { add, getRollingsByStripId };
 };

@@ -18,7 +18,6 @@ const emit = defineEmits<{
 }>();
 
 const dayjs = useDayjs();
-const value1 = ref<Dayjs>(dayjs());
 
 const loading = ref(false);
 const formRef = ref();
@@ -35,7 +34,10 @@ const formState = reactive<Partial<ICoil>>({
 
 onMounted(() => {
   if (props.coil) {
-    Object.assign(formState, { ...props.coil });
+    Object.assign(formState, {
+      ...props.coil,
+      date: dayjs(props.coil.date as Date),
+    });
   }
 });
 
@@ -87,7 +89,13 @@ const handleOk = () => {
       try {
         loading.value = true;
         if (props.coil) {
-          await updateCoil(props.coil.id, _.cloneDeep(formState as ICoil));
+          await updateCoil(
+            props.coil.id,
+            _.cloneDeep({
+              ...formState,
+              date: (formState.date as Dayjs).toDate(),
+            } as ICoil)
+          );
         } else {
           await addCoil(
             _.cloneDeep({
@@ -98,7 +106,6 @@ const handleOk = () => {
         }
         notificationSuccess(`Se añadió`);
         emit("onClose");
-        console.log("finish!");
       } catch (error: any) {
         modalError(error.message);
       } finally {
@@ -196,6 +203,6 @@ const disabledDate = (current: Dayjs) => {
       </a-card>
     </a-form>
 
-    <pre>{{ JSON.stringify(formState, null, 2) }}</pre>
+    <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
   </a-modal>
 </template>

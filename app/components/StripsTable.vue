@@ -15,39 +15,19 @@ const emit = defineEmits<{
 
 const dayjs = useDayjs();
 
-const open = ref(false);
 const openRolling = ref(false);
-const openInfoStrip = ref(false);
+const openRollings = ref(false);
 const strip = ref<IStrip>();
 
-const { data: strips, pending, remove } = useCrudStrips();
-
-const handleRemove = (id: string) => {
-  // try {
-  //   Modal.confirm({
-  //     title: "Eliminar stripo?",
-  //     onOk: async () => {
-  //       await remove(db, id)
-  //       notificationSuccess("stripo eliminado")
-  //     },
-  //   })
-  // } catch (error: any) {
-  //   modalError(error.message)
-  // }
-};
-
-const handleUpdate = (stripSelected: any) => {
-  open.value = true;
-  strip.value = stripSelected;
-};
+const { data: strips, pending } = useCrudStrips();
 
 const handleOpenRolling = (stripSelected: any) => {
   openRolling.value = true;
   strip.value = stripSelected;
 };
 
-const handleInfoStrip = (stripSelected: any) => {
-  openInfoStrip.value = true;
+const handleOpenMovements = (stripSelected: any) => {
+  openRollings.value = true;
   strip.value = stripSelected;
 };
 
@@ -55,7 +35,7 @@ const columns: TableProps["columns"] = [
   {
     title: "ITEM",
     key: "item",
-    width: "80px",
+    width: "70px",
     align: "center",
     customRender: ({ index }) => {
       return _.padStart(`${index + 1}`, 2, "0");
@@ -94,7 +74,7 @@ const columns: TableProps["columns"] = [
     title: "FLEJES",
     key: "quantity",
     dataIndex: "quantity",
-    width: "100px",
+    width: "80px",
     align: "center",
   },
   {
@@ -109,30 +89,30 @@ const columns: TableProps["columns"] = [
     title: "PESO FLEJES",
     key: "weightStrips",
     dataIndex: "weightStrips",
-    width: "120px",
+    width: "110px",
     align: "right",
     customRender: ({ value }) => {
-      return `${currency(value, "", 4)} [kg]`;
+      return `${value} [kg]`;
     },
   },
   {
-    title: "PRECIO REAL X KG [S/]",
+    title: "PRECIO REAL X KG",
     key: "priceRealPerKilogram",
     dataIndex: "priceRealPerKilogram",
-    width: "150px",
+    width: "130px",
     align: "right",
-    // customRender: ({ value }) => {
-    //   return currency(value, "", 4);
-    // },
+    customRender: ({ value }) => {
+      return `${value} [PEN]`;
+    },
   },
   {
-    title: "PRECIO X FLEJE [S/]",
+    title: "PRECIO X FLEJE",
     key: "pricePerStrip",
     dataIndex: "pricePerStrip",
     width: "130px",
     align: "right",
     customRender: ({ value }) => {
-      return currency(value, "", 4);
+      return `${value} [PEN]`;
     },
   },
   // {
@@ -168,7 +148,7 @@ const columns: TableProps["columns"] = [
   {
     title: "",
     key: "action",
-    width: "120px",
+    width: "80px",
     align: "center",
   },
 ];
@@ -190,12 +170,15 @@ const columns: TableProps["columns"] = [
           <span v-else>-</span>
         </template>
 
-        <!-- <template v-else-if="column.dataIndex === 'serie'">
-          <a v-if="record.isCutting" @click="handleInfoStrip(record)"
-            >{{ text }} <InfoCircleOutlined
-          /></a>
+        <template v-else-if="column.dataIndex === 'quantityAvailable'">
+          <a
+            v-if="record.quantityAvailable < record.quantity"
+            @click.prevent="handleOpenMovements(record)"
+          >
+            {{ text }}
+          </a>
           <span v-else>{{ text }}</span>
-        </template> -->
+        </template>
 
         <template v-else-if="column.key === 'action'">
           <a-button
@@ -205,7 +188,7 @@ const columns: TableProps["columns"] = [
           >
             Rolar
           </a-button>
-          <a-divider type="vertical"></a-divider>
+          <!-- <a-divider type="vertical"></a-divider>
           <a-dropdown placement="bottomRight" :arrow="{ pointAtCenter: true }">
             <a @click.prevent>
               Más
@@ -221,10 +204,17 @@ const columns: TableProps["columns"] = [
                 </a-menu-item>
               </a-menu>
             </template>
-          </a-dropdown>
+          </a-dropdown> -->
         </template>
       </template>
     </a-table>
+
+    <RollingsModal
+      v-if="openRollings && strip"
+      :strip="strip"
+      :open="openRollings"
+      @on-close="openRollings = false"
+    />
 
     <NewRollingModal
       v-if="openRolling && strip"

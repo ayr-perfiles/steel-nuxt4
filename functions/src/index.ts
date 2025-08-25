@@ -177,43 +177,4 @@ exports.onVoucherCreated = onDocumentCreated(
   }
 );
 
-// // export const onCuttingPlanCreated = onDocumentCreated(
-// //   "coils/{coilId}/strips/{stripId}",
-// //   async (event) => {
-// //     const snapshot = event.data;
-// //     if (!snapshot) {
-// //       console.log("No data associated with the event");
-// //       return;
-// //     }
-
-// //     const data = snapshot.data();
-// //     const productId = data.product.id;
-// //     const productRef = db.collection("products").doc(productId);
-// //     const coilsRef = db.collection("coils").doc(event.params.coilId);
-
-// //     await db.runTransaction(async (transaction) => {
-// //       const product = await transaction.get(productRef);
-// //       const coil = await transaction.get(coilsRef);
-
-// //       const dataProduct = product.data();
-// //       const dataCoil = coil.data();
-
-// //       if (!dataProduct) throw new Error("No Data Product!");
-// //       if (!dataCoil) throw new Error("No Data Coil!");
-
-// //       const costAverage = dataProduct.price
-// //         ? (dataProduct.price + data.price) / 2
-// //         : data.price;
-
-// //       transaction.update(productRef, {
-// //         price: costAverage,
-// //       });
-
-// //       transaction.update(coilsRef, {
-// //         isCutting: true,
-// //       });
-// //     });
-// //   }
-// // );
-
 setGlobalOptions({ maxInstances: 10 });
