@@ -78,9 +78,9 @@ const items: ItemType[] = reactive([
   // { type: "divider" },
   // getItem("Gastos e ingresos", "CashMovementsStore", () => h(AuditOutlined)),
 
-  getItem("Configuración", "grp", null, [], "group"),
-  { type: "divider" },
-  getItem("Usuarios", "Users", h(TeamOutlined)),
+  // getItem("Configuración", "grp", null, [], "group"),
+  // { type: "divider" },
+  // getItem("Usuarios", "Users", h(TeamOutlined)),
 ]);
 
 const handleClick: MenuProps["onClick"] = (e) => {

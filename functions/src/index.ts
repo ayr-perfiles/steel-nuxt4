@@ -47,15 +47,16 @@ exports.onRollingCreated = onDocumentCreated(
 
     // gets
     const stripRef = db.collection("strips").doc(rollingData.stripId);
-    const strip = await stripRef.get().then((doc) => doc.data());
-    if (!strip) {
+    const stripData = await stripRef.get().then((doc) => doc.data());
+
+    if (!stripData) {
       console.log("No existe el strip asociado");
       return;
     }
 
-    const prodRef = db.collection("products").doc(rollingData.productoId);
-    const prodSnap = await prodRef.get().then((doc) => doc.data());
-    if (!prodSnap) {
+    const prodRef = db.collection("products").doc(stripData.product.id);
+    const prodData = await prodRef.get().then((doc) => doc.data());
+    if (!prodData) {
       console.log("No existe el product asociado");
       return;
     }
@@ -67,9 +68,9 @@ exports.onRollingCreated = onDocumentCreated(
     const movimientoRef = db.collection("movements").doc();
     const details = [
       {
-        productId: strip.product.id,
+        productId: stripData.product.id,
         quantity: rollingData.quantity,
-        description: `Movimiento generado por el rollo ${rollingId} del strip ${strip.id}`,
+        description: `Movimiento generado por el rollo ${rollingId} del strip ${stripData.id}`,
       },
     ];
 
@@ -77,19 +78,18 @@ exports.onRollingCreated = onDocumentCreated(
       date: rollingData.date,
       rollingId: rollingId,
       userId: rollingData.userId || "sistema",
-      productIds: [strip.product.id],
+      productIds: [stripData.product.id],
       details: details,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
 
     // update strip
-    const stripData = strip.data();
     const newQuantityAvailable = stripData.quantityAvailable - 1;
     const newQProductProduced =
       (stripData.qProductProduced || 0) + rollingData.quantity;
     const newCostPerUnit =
-      (strip.pricePerStrip * (strip.quantity - newQuantityAvailable)) /
+      (stripData.pricePerStrip * (stripData.quantity - newQuantityAvailable)) /
       newQProductProduced;
 
     batch.update(stripRef, {
@@ -100,11 +100,10 @@ exports.onRollingCreated = onDocumentCreated(
     });
 
     // update product
-    const prodData = prodSnap.data();
     const stock = prodData.stock || 0;
     const newStock = stock + rollingData.quantity;
-    const newQRolling = rollingData.quantityRolling + 1;
-    const currentCostPerUnit = strip.pricePerStrip / rollingData.quantity;
+    const newQRolling = (rollingData.quantityRolling || 0) + 1;
+    const currentCostPerUnit = stripData.pricePerStrip / rollingData.quantity;
     const newPrice = !prodData.price
       ? newCostPerUnit
       : getUpdateAverage(
@@ -118,6 +117,60 @@ exports.onRollingCreated = onDocumentCreated(
       price: newPrice,
       quantityRolling: newQRolling,
     });
+
+    await batch.commit();
+    console.log("Transaction successfully committed!");
+  }
+);
+
+exports.onVoucherCreated = onDocumentCreated(
+  "vouchers/{voucherId}",
+  async (event) => {
+    const voucherId = event.params.voucherId;
+    const voucherData = event.data?.data();
+    if (!voucherData) {
+      console.log("No data associated with the event");
+      return;
+    }
+
+    // before transactions
+    const batch = db.batch();
+
+    // add movement
+    const movimientoRef = db.collection("movements").doc();
+
+    const details = voucherData.details.map((detail: any) => ({
+      productId: detail.productId,
+      quantity: -detail.quantity,
+      description: `Movimiento generado por el voucher ${voucherId}`,
+    }));
+
+    batch.set(movimientoRef, {
+      date: voucherData.date,
+      voucherId: voucherId,
+      userId: voucherData.userId || "sistema",
+      productIds: voucherData.details.map((detail: any) => detail.productId),
+      details: details,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    // update product
+    for (const detail of voucherData.details) {
+      const prodRef = db.collection("products").doc(detail.productId);
+      const prodData = await prodRef.get().then((doc) => doc.data());
+      if (!prodData) {
+        console.log("No existe el product asociado");
+        continue;
+      }
+
+      const stock = prodData.stock || 0;
+      const newStock = stock - detail.quantity;
+
+      batch.update(prodRef, {
+        stock: newStock,
+      });
+    }
 
     await batch.commit();
     console.log("Transaction successfully committed!");

@@ -63,12 +63,14 @@ const columns: TableProps["columns"] = [
   },
   {
     title: "FECHA",
-    key: "createdAt",
-    dataIndex: "createdAt",
-    width: "100px",
+    key: "date",
+    dataIndex: "date",
+    width: "120px",
     align: "center",
+    defaultSortOrder: "descend",
+    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY");
+      return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
   },
   {
@@ -82,23 +84,31 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "ANCHO [mm]",
+    title: "ANCHO",
     key: "width",
     dataIndex: "width",
     width: "100px",
+    align: "right",
+    customRender: ({ value }) => {
+      return value > 0 ? `${value} [mm]` : "-";
+    },
   },
 
   {
-    title: "PESO [kg]",
+    title: "PESO",
     key: "weight",
     dataIndex: "weight",
     width: "100px",
+    align: "right",
+    customRender: ({ value }) => {
+      return value ? `${value} [kg]` : "-";
+    },
   },
   {
-    title: "PRECIO POR [kg]",
+    title: "PRECIO POR X KG [S/]",
     key: "pricePerKilogram",
     dataIndex: "pricePerKilogram",
-    width: "120px",
+    width: "140px",
     align: "right",
     customRender: ({ value }) => {
       return currency(value, "", 4);

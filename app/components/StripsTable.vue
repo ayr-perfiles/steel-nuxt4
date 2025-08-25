@@ -65,18 +65,21 @@ const columns: TableProps["columns"] = [
     title: "FECHA",
     key: "date",
     dataIndex: "date",
-    width: "100px",
+    width: "120px",
     align: "center",
+    defaultSortOrder: "descend",
+    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY");
+      return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
   },
   {
     title: "BOBINA",
     key: "coil",
     dataIndex: "coil",
+    width: "150px",
     customRender: ({ value }) => {
-      return `${value.serie} | ${value.weight}kg`;
+      return `${value.serie} | ${value.weight} [kg]`;
     },
   },
   {
@@ -88,14 +91,14 @@ const columns: TableProps["columns"] = [
     },
   },
   {
-    title: "CANTIDAD FLEJES",
+    title: "FLEJES",
     key: "quantity",
     dataIndex: "quantity",
     width: "100px",
     align: "center",
   },
   {
-    title: "CANTIDAD FLEJES DISPONIBLES",
+    title: "FLEJES DISPONIBLES",
     key: "quantityAvailable",
     dataIndex: "quantityAvailable",
     width: "100px",
@@ -103,30 +106,34 @@ const columns: TableProps["columns"] = [
   },
 
   {
-    title: "PESO FLEJES [kg]",
+    title: "PESO FLEJES",
     key: "weightStrips",
     dataIndex: "weightStrips",
-    width: "100px",
+    width: "120px",
+    align: "right",
+    customRender: ({ value }) => {
+      return `${currency(value, "", 4)} [kg]`;
+    },
   },
   {
-    title: "PRECIO REAL POR [kg]",
+    title: "PRECIO REAL X KG [S/]",
     key: "priceRealPerKilogram",
     dataIndex: "priceRealPerKilogram",
-    width: "120px",
+    width: "150px",
     align: "right",
     // customRender: ({ value }) => {
     //   return currency(value, "", 4);
     // },
   },
   {
-    title: "PRECIO POR FLEJE [S/]",
+    title: "PRECIO X FLEJE [S/]",
     key: "pricePerStrip",
     dataIndex: "pricePerStrip",
-    width: "120px",
+    width: "130px",
     align: "right",
-    // customRender: ({ value }) => {
-    //   return currency(value, "", 4);
-    // },
+    customRender: ({ value }) => {
+      return currency(value, "", 4);
+    },
   },
   // {
   //   title: "COSTO POR UNIDAD [S/]",

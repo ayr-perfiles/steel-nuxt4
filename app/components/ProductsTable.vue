@@ -68,11 +68,14 @@ const columns: TableProps["columns"] = [
     // },
   },
   {
-    title: "ANCHO [mm]",
+    title: "ANCHO",
     key: "width",
     dataIndex: "width",
     width: "100px",
-    align: "center",
+    align: "right",
+    customRender: ({ value }) => {
+      return value > 0 ? `${value} [mm]` : "-";
+    },
   },
 
   {
@@ -111,9 +114,11 @@ const columns: TableProps["columns"] = [
       :scroll="{ x: 1100 }"
       bordered
     >
-      <template #bodyCell="{ column, text, record }">
+      <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
-          <a-tag v-if="text">{{ text }}</a-tag>
+          <a v-if="value > 0">
+            {{ text }}
+          </a>
           <span v-else>-</span>
         </template>
 

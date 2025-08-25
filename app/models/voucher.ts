@@ -5,7 +5,8 @@ import {
   type SnapshotOptions,
 } from "firebase/firestore";
 import type { IAudit } from "./audit";
-import type { ICustomer } from "./customer";
+import type { ICustomerVoucher } from "./customer";
+import type { ETypeVoucher } from "~/enums";
 import type { Dayjs } from "dayjs";
 
 interface IDetailVoucher {
@@ -18,8 +19,9 @@ interface IDetailVoucher {
 export interface IVoucher extends IAudit {
   id: string;
   date: Dayjs | Timestamp | Date;
+  typeVoucher: ETypeVoucher;
   numberVoucher: number;
-  customer: ICustomer;
+  customer: ICustomerVoucher;
   description: string;
   total: number;
   details: IDetailVoucher[];
@@ -36,11 +38,12 @@ export const voucherConverter = {
     return {
       date: voucher.date,
       numberVoucher: voucher.numberVoucher,
+      typeVoucher: voucher.typeVoucher,
       customer: voucher.customer,
       description: voucher.description || null,
       total: voucher.total,
       details: voucher.details,
-      userId: voucher.userId,
+      userId: voucher.userId || null,
       createdAt: voucher.createdAt,
       updatedAt: voucher.updatedAt || null,
     };

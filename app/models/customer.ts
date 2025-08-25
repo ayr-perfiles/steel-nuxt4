@@ -13,6 +13,9 @@ export interface ICustomer extends IAudit {
   address: string;
 }
 
+export interface ICustomerVoucher
+  extends Pick<ICustomer, "id" | "businessEntity"> {}
+
 export const customerConverter = {
   toFirestore: (customer: ICustomer) => {
     return {
