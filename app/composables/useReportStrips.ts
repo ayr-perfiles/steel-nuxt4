@@ -29,8 +29,6 @@ export const useReportStrips = () => {
   );
 
   const updateReport = async () => {
-    if (!products.value.length) return;
-
     const newReportInformation: IReportInformation[] = [];
 
     for (const product of products.value) {
@@ -53,6 +51,12 @@ export const useReportStrips = () => {
 
     reportInformation.value = newReportInformation;
   };
+
+  watchEffect(() => {
+    if (products.value.length > 0) {
+      updateReport();
+    }
+  });
 
   return {
     updateReport,

@@ -16,8 +16,6 @@ const emit = defineEmits<{
 const dayjs = useDayjs();
 
 const open = ref(false);
-const openCuttingPlan = ref(false);
-const openRolling = ref(false);
 const voucher = ref<IVoucher>();
 
 const { data: vouchers, pending, remove } = useCrudVouchers();
@@ -39,24 +37,6 @@ const handleRemove = (id: string) => {
 const handleUpdate = (voucherSelected: any) => {
   open.value = true;
   voucher.value = voucherSelected;
-};
-
-const handleOpenCuttingPlan = (voucherSelected: any) => {
-  openCuttingPlan.value = true;
-  voucher.value = voucherSelected;
-};
-
-const handleOpenRolling = (voucherSelected: any) => {
-  openRolling.value = true;
-  voucher.value = voucherSelected;
-};
-
-const handleSelected = (voucher: any) => {
-  emit("onSelected", {
-    id: voucher.id,
-    name: voucher.name,
-    stock: voucher.stock,
-  });
 };
 
 const columns: TableProps["columns"] = [
@@ -134,7 +114,11 @@ const columns: TableProps["columns"] = [
         </template>
 
         <template v-else-if="column.key === 'numberVoucher'">
-          <a class="text-blue-600 hover:underline cursor-pointer">{{ text }}</a>
+          <a
+            class="text-blue-600 hover:underline cursor-pointer"
+            @click="handleUpdate(record)"
+            >{{ text }}</a
+          >
         </template>
 
         <template v-else-if="column.key === 'action'">
@@ -159,5 +143,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <NewVoucherModal
+      v-if="open"
+      :voucher="voucher"
+      :open="open"
+      @on-close="open = false"
+    />
   </div>
 </template>

@@ -42,7 +42,10 @@ const formState = reactive<Partial<IVoucher>>({
 
 onMounted(() => {
   if (props.voucher) {
-    Object.assign(formState, { ...props.voucher });
+    Object.assign(formState, {
+      ...props.voucher,
+      date: dayjs(props.voucher.date as Date),
+    });
   }
 });
 
@@ -137,22 +140,50 @@ const handleOk = () => {
     });
 };
 
+onMounted(() => {
+  if (props.voucher) {
+    Object.assign(formState, {
+      ...props.voucher,
+      date: dayjs(props.voucher.date as Date),
+    });
+
+    if (props.voucher.details && props.voucher.details.length) {
+      Object.assign(
+        items,
+        props.voucher.details.map((detail) => {
+          const product = products.value.find((p) => p.id === detail.productId);
+          return {
+            productId: detail.productId,
+            productName: product?.name || "",
+            productPrice: product?.price || 0,
+            price: detail.price,
+            stock: product?.stock || 0,
+            quantity: detail.quantity,
+          };
+        })
+      );
+    }
+  }
+});
+
 watchEffect(() => {
-  Object.assign(
-    items,
-    products.value
-      .filter((item) => item.stock > 0)
-      .map((item) => {
-        return {
-          productId: item.id,
-          productName: item.name,
-          productPrice: item.price || 0,
-          price: item.price || 0,
-          stock: item.stock || 0,
-          // quantity: 0,
-        };
-      })
-  );
+  if (!props.voucher) {
+    Object.assign(
+      items,
+      products.value
+        .filter((item) => item.stock > 0)
+        .map((item) => {
+          return {
+            productId: item.id,
+            productName: item.name,
+            productPrice: item.price || 0,
+            price: item.price || 0,
+            stock: item.stock || 0,
+            // quantity: 0,
+          };
+        })
+    );
+  }
 });
 
 const disabledDate = (current: Dayjs) => {
@@ -235,8 +266,12 @@ const columns: TableProps["columns"] = [
           <PlusOutlined />
         </template>
 
-        {{ props.voucher ? "Editar " : "Agregar " }}
-        <span> Venta</span>
+        {{ props.voucher ? `Editar ` : "Agregar " }}
+        <span>
+          Venta{{
+            `${props.voucher ? `: ${props.voucher.numberVoucher}` : ""}`
+          }}</span
+        >
       </a-tag>
     </template>
     <a-card>

@@ -6,14 +6,11 @@ definePageMeta({
 });
 
 const { updateReport, reportInformation } = useReportCoils();
-const {
-  updateReport: updateReportStrips,
-  reportInformation: reportInformationStrips,
-} = useReportStrips();
+const { reportInformation: reportInformationStrips } = useReportStrips();
 
 onMounted(() => {
   updateReport();
-  updateReportStrips();
+  // updateReportStrips();
 });
 
 const columns: TableProps["columns"] = [
