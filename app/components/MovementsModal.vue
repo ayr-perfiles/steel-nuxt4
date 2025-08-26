@@ -77,9 +77,6 @@ const columns: TableProps["columns"] = [
     width: "120px",
     align: "center",
   },
-  {
-    title: "",
-  },
 ];
 </script>
 
@@ -118,9 +115,9 @@ const columns: TableProps["columns"] = [
             <span v-else>-</span>
           </template>
 
-          <template v-else-if="column.key === 'action'">
+          <!-- <template v-else-if="column.key === 'action'">
             <a-button type="link" danger> Eliminar </a-button>
-          </template>
+          </template> -->
         </template>
       </a-table>
     </a-card>

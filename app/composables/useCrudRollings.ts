@@ -8,6 +8,8 @@ import {
   query,
   where,
   getDocs,
+  doc,
+  deleteDoc,
 } from "firebase/firestore";
 import { rollingConverter, type IRolling } from "~/models/rolling";
 
@@ -36,5 +38,8 @@ export const useCrudRollings = () => {
     return rollings;
   };
 
-  return { add, getRollingsByStripId };
+  const remove = async (id: string) => {
+    await deleteDoc(doc(dbClient, "rollings", id));
+  };
+  return { add, getRollingsByStripId, remove };
 };

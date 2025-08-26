@@ -29,8 +29,12 @@
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { setGlobalOptions } from "firebase-functions";
-import { onDocumentCreated } from "firebase-functions/firestore";
+import {
+  onDocumentCreated,
+  onDocumentDeleted,
+} from "firebase-functions/firestore";
 import getUpdateAverage from "../utils/getUpdateAverage";
+import getPreviousAverage from "../utils/getPreviousAverage";
 
 initializeApp();
 const db = getFirestore();
@@ -47,7 +51,9 @@ exports.onRollingCreated = onDocumentCreated(
 
     // gets
     const stripRef = db.collection("strips").doc(rollingData.stripId);
-    const stripData = await stripRef.get().then((doc) => doc.data());
+    const stripData = await stripRef.get().then((doc) => {
+      return { ...doc.data(), id: doc.id } as any;
+    });
 
     if (!stripData) {
       console.log("No existe el strip asociado");
@@ -55,7 +61,9 @@ exports.onRollingCreated = onDocumentCreated(
     }
 
     const prodRef = db.collection("products").doc(stripData.product.id);
-    const prodData = await prodRef.get().then((doc) => doc.data());
+    const prodData = await prodRef.get().then((doc) => {
+      return { ...doc.data(), id: doc.id } as any;
+    });
     if (!prodData) {
       console.log("No existe el product asociado");
       return;
@@ -102,15 +110,112 @@ exports.onRollingCreated = onDocumentCreated(
     // update product
     const stock = prodData.stock || 0;
     const newStock = stock + rollingData.quantity;
-    const newQRolling = (rollingData.quantityRolling || 0) + 1;
+    const newQRolling = (prodData.quantityRolling || 0) + 1;
     const currentCostPerUnit = stripData.pricePerStrip / rollingData.quantity;
-    const newPrice = !prodData.price
-      ? newCostPerUnit
-      : getUpdateAverage(
-          prodData.price || 0,
-          prodData.quantityRolling || 0,
-          currentCostPerUnit
-        );
+    const newPrice =
+      newQRolling <= 1
+        ? currentCostPerUnit
+        : getUpdateAverage(
+            prodData.price || 0,
+            prodData.quantityRolling || 0,
+            currentCostPerUnit
+          );
+
+    batch.update(prodRef, {
+      stock: newStock,
+      price: newPrice,
+      quantityRolling: newQRolling,
+    });
+
+    await batch.commit();
+    console.log("Transaction successfully committed!");
+  }
+);
+
+exports.onRollingDeleted = onDocumentDeleted(
+  "rollings/{rollingId}",
+  async (event) => {
+    const rollingId = event.params.rollingId;
+    const rollingData = event.data?.data();
+    if (!rollingData) {
+      console.log("No data associated with the event");
+      return;
+    }
+
+    // gets
+    const stripRef = db.collection("strips").doc(rollingData.stripId);
+    const stripData = await stripRef.get().then((doc) => {
+      return { ...doc.data(), id: doc.id } as any;
+    });
+
+    if (!stripData) {
+      console.log("No existe el strip asociado");
+      return;
+    }
+
+    const prodRef = db.collection("products").doc(stripData.product.id);
+    const prodData = await prodRef.get().then((doc) => {
+      return { ...doc.data(), id: doc.id } as any;
+    });
+    if (!prodData) {
+      console.log("No existe el product asociado");
+      return;
+    }
+
+    // before transactions
+    const batch = db.batch();
+
+    // add movement
+    const movimientoRef = db.collection("movements").doc();
+    const details = [
+      {
+        productId: stripData.product.id,
+        quantity: rollingData.quantity,
+        description: `Movimiento generado al eliminar el rollo ${rollingId} del strip ${stripData.id}`,
+      },
+    ];
+
+    batch.set(movimientoRef, {
+      date: rollingData.date,
+      rollingId: rollingId,
+      userId: rollingData.userId || "sistema",
+      productIds: [stripData.product.id],
+      details: details,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    // update strip
+    const newQuantityAvailable = stripData.quantityAvailable + 1;
+    const newQProductProduced =
+      (stripData.qProductProduced || 0) - rollingData.quantity;
+    const newQuantityRolled = stripData.quantity - newQuantityAvailable;
+    let newCostPerUnit = null;
+    if (newQuantityRolled > 0)
+      newCostPerUnit =
+        (stripData.pricePerStrip * newQuantityRolled) / newQProductProduced;
+
+    batch.update(stripRef, {
+      quantityAvailable: newQuantityAvailable,
+      qProductProduced: newQProductProduced,
+      costPerUnit: newCostPerUnit,
+      isRolling: newQuantityAvailable < 1,
+    });
+
+    // update product
+    const stock = prodData.stock || 0;
+    const newStock = stock - rollingData.quantity;
+    const newQRolling = (prodData.quantityRolling || 0) - 1;
+    const currentCostPerUnit = stripData.pricePerStrip / rollingData.quantity;
+    let newPrice = null;
+
+    if (newQRolling === 1) newPrice = newCostPerUnit;
+    else if (newQRolling > 1)
+      newPrice = getPreviousAverage(
+        prodData.price || 0,
+        prodData.quantityRolling || 0,
+        currentCostPerUnit
+      );
 
     batch.update(prodRef, {
       stock: newStock,

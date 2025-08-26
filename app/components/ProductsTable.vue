@@ -114,10 +114,9 @@ const columns: TableProps["columns"] = [
     >
       <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
-          <a v-if="value > 0" @click="handleOpenMovements(record)">
-            {{ text }}
+          <a @click="handleOpenMovements(record)">
+            <span>{{ value > 0 ? text : 0 }}</span>
           </a>
-          <span v-else>-</span>
         </template>
 
         <template v-else-if="column.key === 'action'">

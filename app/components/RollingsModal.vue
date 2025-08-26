@@ -18,7 +18,30 @@ const emit = defineEmits<{
 const dayjs = useDayjs();
 const rollings = ref<IRolling[]>([]);
 
-const { getRollingsByStripId } = useCrudRollings();
+const { getRollingsByStripId, remove: removeRolling } = useCrudRollings();
+
+const handleRemove = async (id: string) => {
+  Modal.confirm({
+    title: "¿Estás seguro de eliminar este rolado?",
+    content: "Esta acción no se puede deshacer.",
+    okText: "Sí, eliminar",
+    okType: "danger",
+    cancelText: "Cancelar",
+    async onOk() {
+      try {
+        await removeRolling(id);
+        const data = await getRollingsByStripId(props.strip.id);
+        rollings.value = data;
+        notificationSuccess("Rolado eliminado correctamente");
+      } catch (error) {
+        modalError(error);
+      }
+    },
+    onCancel() {
+      // No action needed on cancel
+    },
+  });
+};
 
 onMounted(async () => {
   try {
@@ -107,7 +130,9 @@ const columns: TableProps["columns"] = [
           </template>
 
           <template v-else-if="column.key === 'action'">
-            <a-button type="link" danger> Eliminar </a-button>
+            <a-button type="link" danger @click="handleRemove(record.id)">
+              Eliminar
+            </a-button>
           </template>
         </template>
       </a-table>
