@@ -257,6 +257,7 @@ const columns: TableProps["columns"] = [
     :confirm-loading="loading"
     class="w-full"
     wrap-class-name="full-modal"
+    destroy-on-close
     @cancel="$emit('onClose')"
     @ok="handleOk"
   >

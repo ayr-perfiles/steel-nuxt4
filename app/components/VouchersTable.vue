@@ -21,17 +21,21 @@ const voucher = ref<IVoucher>();
 const { data: vouchers, pending, remove } = useCrudVouchers();
 
 const handleRemove = (id: string) => {
-  // try {
-  //   Modal.confirm({
-  //     title: "Eliminar vouchero?",
-  //     onOk: async () => {
-  //       await remove(db, id)
-  //       notificationSuccess("vouchero eliminado")
-  //     },
-  //   })
-  // } catch (error: any) {
-  //   modalError(error.message)
-  // }
+  Modal.confirm({
+    title: "¿Estás seguro de eliminar este comprobante?",
+    content: "Esta acción no se puede deshacer.",
+    okText: "Sí, eliminar",
+    okType: "danger",
+    cancelText: "Cancelar",
+    async onOk() {
+      try {
+        await remove(id);
+        notificationSuccess("Comprobante eliminado correctamente");
+      } catch (error) {
+        modalError("Error al eliminar el comprobante" + error);
+      }
+    },
+  });
 };
 
 const handleUpdate = (voucherSelected: any) => {

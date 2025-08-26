@@ -21,6 +21,14 @@ const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
 const { data: coils, pending, remove } = useCrudCoils();
+const {
+  coils: others,
+  prevPage,
+  nextPage,
+  currentPage,
+  sizePerPage,
+  totalCoils,
+} = useCoils(10);
 
 const handleRemove = (id: string) => {
   Modal.confirm({
@@ -35,6 +43,15 @@ const handleRemove = (id: string) => {
     },
   });
 };
+
+const getTextPagination = computed(() => {
+  const from = sizePerPage.value * currentPage.value + 1;
+  let to = sizePerPage.value * (currentPage.value + 1);
+  if (to > totalCoils.value) {
+    to = totalCoils.value;
+  }
+  return `${from}-${to} de ${totalCoils.value}`;
+});
 
 const handleUpdate = (coilSelected: any) => {
   open.value = true;
@@ -147,7 +164,7 @@ const columns: TableProps["columns"] = [
   <div>
     <a-table
       :columns="columns"
-      :data-source="coils"
+      :data-source="others"
       :loading="pending"
       :pagination="false"
       :scroll="{ x: 1100 }"
@@ -194,6 +211,14 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <LoadMoreItems
+      :size-per-page="sizePerPage"
+      :current-page="currentPage"
+      :total-coils="totalCoils"
+      :prev-page="prevPage"
+      :next-page="nextPage"
+    />
 
     <NewCoilModal
       v-if="open && coil"

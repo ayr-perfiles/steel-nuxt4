@@ -1,5 +1,3 @@
-// composables/usePaginatedCoils.ts
-import { ref, computed, watchEffect } from "vue";
 import {
   collection,
   query,
@@ -9,79 +7,117 @@ import {
   startAfter,
   endBefore,
   getDocs,
-  QueryDocumentSnapshot,
-  Query,
+  type Query,
+  type QueryDocumentSnapshot,
   type DocumentData,
+  getCountFromServer,
 } from "firebase/firestore";
-import { useCollection, useFirestore } from "vuefire";
-import { coilConverter } from "../models/coil";
+import { useFirestore } from "vuefire";
+import { coilConverter } from "~/models/coil";
 
-export function useCoils(perPage = 5) {
+export function useCoils(perPage = 2) {
   const dbClient = useFirestore();
+
+  // filtros
   const category = ref<string | null>(null);
   const onlyDone = ref<boolean | null>(null);
 
-  const lastVisible = ref<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const firstVisible = ref<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const direction = ref<"next" | "prev" | null>(null);
+  // estado
+  const coils = ref<any[]>([]);
+  const loading = ref(false);
+  const sizePerPage = ref(perPage);
+  const totalCoils = ref(0);
+
+  // punteros de navegación
+  const currentPage = ref(0);
+  const pageSnapshots: QueryDocumentSnapshot<DocumentData>[][] = []; // stack de docs por página
 
   const coilsCollection = collection(dbClient, "coils");
 
-  const queryRef = computed(() => {
+  const buildQuery = (anchor: QueryDocumentSnapshot<DocumentData> | null) => {
     let q: Query = query(coilsCollection);
 
     if (category.value) q = query(q, where("category", "==", category.value));
     if (onlyDone.value !== null)
       q = query(q, where("done", "==", onlyDone.value));
 
-    q = query(q, orderBy("createdAt", "desc"), limit(perPage));
+    q = query(q, orderBy("date", "desc"), limit(sizePerPage.value));
 
-    if (direction.value === "next" && lastVisible.value) {
-      q = query(q, startAfter(lastVisible.value));
-    }
-
-    if (direction.value === "prev" && firstVisible.value) {
-      q = query(q, endBefore(firstVisible.value));
+    if (anchor) {
+      q = query(q, startAfter(anchor));
     }
 
     return q.withConverter(coilConverter);
-  });
-
-  const coils = useCollection(queryRef, {
-    ssrKey: "coils",
-  });
-
-  // Actualizar punteros para paginación después de cada cambio de consulta
-  watchEffect(async () => {
-    const snapshot = await getDocs(queryRef.value);
-    firstVisible.value = snapshot.docs[0] ?? null;
-    lastVisible.value = snapshot.docs[snapshot.docs.length - 1] ?? null;
-  });
-
-  const nextPage = () => {
-    direction.value = "next";
   };
 
-  const prevPage = () => {
-    direction.value = "prev";
+  const fetchPage = async (pageIndex: number) => {
+    loading.value = true;
+    calcTotalCoils();
+
+    let anchor: QueryDocumentSnapshot<DocumentData> | null = null;
+
+    if (pageIndex > 0) {
+      const prevDocs = pageSnapshots[pageIndex - 1] ?? [];
+      anchor = prevDocs[prevDocs.length - 1] ?? null;
+    }
+
+    const snapshot = await getDocs(buildQuery(anchor));
+    const docs = snapshot.docs;
+
+    if (docs.length > 0) {
+      coils.value = docs.map((doc) => doc.data());
+      pageSnapshots[pageIndex] = docs;
+      currentPage.value = pageIndex;
+    } else {
+      if (pageIndex > currentPage.value) {
+        // no había siguiente, quedarse en la página actual
+        return;
+      }
+    }
+
+    loading.value = false;
   };
 
-  const resetPagination = () => {
-    direction.value = null;
-    firstVisible.value = null;
-    lastVisible.value = null;
+  // funciones de navegación
+  const nextPage = async () => {
+    await fetchPage(currentPage.value + 1);
   };
 
-  watchEffect(() => {
-    // Reiniciar paginación al cambiar filtros
-    resetPagination();
-  });
+  const prevPage = async () => {
+    if (currentPage.value > 0) {
+      // volver a usar docs almacenados de esa página
+      const docs = pageSnapshots[currentPage.value - 1];
+      coils.value = docs?.map((doc) => doc.data()) || [];
+      currentPage.value--;
+    }
+  };
+
+  // by gsm
+  const calcTotalCoils = async () => {
+    const snapshotAggregate = await getCountFromServer(coilsCollection);
+    totalCoils.value = snapshotAggregate.data().count;
+  };
+
+  // reset cuando cambian filtros
+  watch(
+    [category, onlyDone, sizePerPage],
+    async () => {
+      pageSnapshots.length = 0;
+      currentPage.value = 0;
+      await fetchPage(0);
+    },
+    { immediate: true }
+  );
 
   return {
     coils,
     category,
     onlyDone,
+    loading,
     nextPage,
     prevPage,
+    currentPage,
+    sizePerPage,
+    totalCoils,
   };
 }

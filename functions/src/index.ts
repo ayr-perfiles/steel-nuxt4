@@ -132,7 +132,7 @@ exports.onRollingCreated = onDocumentCreated(
   }
 );
 
-exports.onRollingDeleted = onDocumentDeleted(
+exports.onRollingRemoved = onDocumentDeleted(
   "rollings/{rollingId}",
   async (event) => {
     const rollingId = event.params.rollingId;
@@ -271,6 +271,60 @@ exports.onVoucherCreated = onDocumentCreated(
 
       const stock = prodData.stock || 0;
       const newStock = stock - detail.quantity;
+
+      batch.update(prodRef, {
+        stock: newStock,
+      });
+    }
+
+    await batch.commit();
+    console.log("Transaction successfully committed!");
+  }
+);
+
+exports.onVoucherRemoved = onDocumentDeleted(
+  "vouchers/{voucherId}",
+  async (event) => {
+    const voucherId = event.params.voucherId;
+    const voucherData = event.data?.data();
+    if (!voucherData) {
+      console.log("No data associated with the event");
+      return;
+    }
+
+    // before transactions
+    const batch = db.batch();
+
+    // add movement
+    const movimientoRef = db.collection("movements").doc();
+
+    const details = voucherData.details.map((detail: any) => ({
+      productId: detail.productId,
+      quantity: detail.quantity,
+      description: `Movimiento eliminado por el voucher ${voucherId}`,
+    }));
+
+    batch.set(movimientoRef, {
+      date: voucherData.date,
+      voucherId: voucherId,
+      userId: voucherData.userId || "sistema",
+      productIds: voucherData.details.map((detail: any) => detail.productId),
+      details: details,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    // update product
+    for (const detail of voucherData.details) {
+      const prodRef = db.collection("products").doc(detail.productId);
+      const prodData = await prodRef.get().then((doc) => doc.data());
+      if (!prodData) {
+        console.log("No existe el product asociado");
+        continue;
+      }
+
+      const stock = prodData.stock || 0;
+      const newStock = stock + detail.quantity;
 
       batch.update(prodRef, {
         stock: newStock,
