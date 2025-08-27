@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     "@ant-design-vue/nuxt",
     "dayjs-nuxt",
     "nuxt-vuefire",
+    "@pinia/nuxt",
   ],
 
   vuefire: {

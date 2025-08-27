@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<!-- <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import _ from "lodash";
 import type { ICoil } from "~/models/coil";
@@ -28,7 +28,7 @@ const {
   currentPage,
   sizePerPage,
   totalCoils,
-} = useCoils(10);
+} = useCoils(2);
 
 const handleRemove = (id: string) => {
   Modal.confirm({
@@ -213,6 +213,7 @@ const columns: TableProps["columns"] = [
     </a-table>
 
     <LoadMoreItems
+      v-model="sizePerPage"
       :size-per-page="sizePerPage"
       :current-page="currentPage"
       :total-coils="totalCoils"
@@ -240,5 +241,154 @@ const columns: TableProps["columns"] = [
       :open="openInfoCoil"
       @on-close="openInfoCoil = false"
     />
+  </div>
+</template> -->
+
+<script setup lang="ts">
+import type { SelectValue } from "ant-design-vue/es/select";
+import { useSyncQueryWithStore } from "~/composables/useSyncQueryWithStore";
+import { EStatusCoil } from "~/enums";
+
+const coilsStore = useCoilsStore();
+const userFilter = ref<string>("");
+
+const loading = ref(false);
+
+const route = useRoute();
+
+// 🔹 Estado local de filtros (vinculado a URL)
+const localFilters = reactive({
+  status: (route.query.status as string) || "all",
+});
+
+async function applyFilters() {
+  loading.value = true;
+  await coilsStore.setFilters({
+    status: localFilters.status,
+  });
+  loading.value = false;
+}
+
+const { init } = useSyncQueryWithStore(coilsStore, {
+  filters: { status: "" },
+});
+
+await init();
+await coilsStore.init();
+
+const handlePrev = async () => {
+  await coilsStore.prevPage();
+};
+
+const handleNext = async () => {
+  await coilsStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await coilsStore.setPageSize(size as number);
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  coilsStore.setSort(sorter.field, direction);
+}
+</script>
+
+<template>
+  <div>
+    <!-- FILTROS -->
+    <a-space>
+      <a-select
+        v-model:value="localFilters.status"
+        @change="applyFilters"
+        style="width: 120px"
+      >
+        <a-select-option value="all">Todos</a-select-option>
+        <a-select-option :value="EStatusCoil.completed"
+          >Completados</a-select-option
+        >
+        <a-select-option :value="EStatusCoil.process"
+          >Pendientes</a-select-option
+        >
+      </a-select>
+
+      <a-input-search
+        v-model:value="userFilter"
+        placeholder="Filtrar por usuario"
+        style="width: 200px"
+        @search="applyFilters"
+      />
+    </a-space>
+
+    <a-divider />
+
+    <a-table
+      :dataSource="coilsStore.items"
+      rowKey="id"
+      bordered
+      :pagination="false"
+    >
+      <a-table-column title="ID" dataIndex="id" />
+      <a-table-column title="FECHA" dataIndex="date" />
+      <a-table-column title="SERIE" dataIndex="serie" />
+      <a-table-column title="PESO" dataIndex="weight" />
+      <a-table-column title="ESTADO" dataIndex="status" />
+    </a-table>
+
+    <!-- 📌 Controles -->
+    <div class="py-4">
+      <div class="flex justify-center">
+        <a-space>
+          <span>Filas por pagina: </span>
+          <a-select
+            v-model:value="coilsStore.pagination.pageSize"
+            style="width: 60px"
+            @change="handlePageSizeChange"
+          >
+            <a-select-option :value="2">10</a-select-option>
+            <a-select-option :value="4">30</a-select-option>
+            <a-select-option :value="6">50</a-select-option>
+          </a-select>
+
+          <span>
+            Página {{ coilsStore.pagination.currentPageIndex + 1 }} de
+            {{
+              Math.max(
+                1,
+                Math.ceil(
+                  coilsStore.pagination.total / coilsStore.pagination.pageSize
+                )
+              )
+            }}
+            (Total: {{ coilsStore.pagination.total }} elementos)
+          </span>
+
+          <a-button
+            type="link"
+            :disabled="coilsStore.pagination.currentPageIndex === 0"
+            @click="handlePrev"
+          >
+            <template #icon><arrow-left-outlined /> </template>
+          </a-button>
+
+          <a-button
+            type="link"
+            :disabled="
+              coilsStore.pagination.currentPageIndex + 1 >=
+              Math.max(
+                1,
+                Math.ceil(
+                  coilsStore.pagination.total / coilsStore.pagination.pageSize
+                )
+              )
+            "
+            @click="handleNext"
+          >
+            <template #icon><arrow-right-outlined /> </template>
+          </a-button>
+        </a-space>
+      </div>
+    </div>
   </div>
 </template>
