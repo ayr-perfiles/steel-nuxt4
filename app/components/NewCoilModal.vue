@@ -17,6 +17,8 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const router = useRouter();
+
 const dayjs = useDayjs();
 
 const loading = ref(false);
@@ -106,6 +108,7 @@ const handleOk = () => {
         }
         notificationSuccess(`Se añadió`);
         emit("onClose");
+        router.go(0);
       } catch (error: any) {
         modalError(error.message);
       } finally {

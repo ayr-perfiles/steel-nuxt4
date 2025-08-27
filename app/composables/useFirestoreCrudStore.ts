@@ -11,31 +11,65 @@ import {
   where,
   query,
   startAfter,
-  startAt,
+  endBefore,
   limit,
-  documentId,
+  onSnapshot,
   type DocumentData,
   type QueryConstraint,
   type DocumentSnapshot,
+  startAt,
+  type FirestoreDataConverter,
+  type QueryDocumentSnapshot,
+  type SnapshotOptions,
+  type WithFieldValue,
+  Timestamp,
 } from "firebase/firestore";
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
+import { useFirestore } from "vuefire";
+import type { IAudit } from "~/models/audit";
+import type { Dayjs } from "dayjs";
 
-export interface PaginationState {
+interface PaginationState {
   pageSize: number;
   currentPageIndex: number;
   total: number;
-  cursors: Array<
-    { first: DocumentSnapshot; last: DocumentSnapshot } | undefined
-  >;
+  cursors: { first: DocumentSnapshot | null; last: DocumentSnapshot | null }[];
 }
 
-export interface SortState {
+interface SortState {
   sortBy: string;
   sortDir: "asc" | "desc";
 }
 
+/** 🔹 Converter genérico */
+function createConverter<
+  T extends { id: string; date?: Date | Timestamp | Dayjs } & IAudit
+>(): FirestoreDataConverter<T> {
+  return {
+    toFirestore(modelObject: WithFieldValue<T>): DocumentData {
+      // 🔹 eliminamos `id` antes de guardar
+      const { id, ...rest } = modelObject as any;
+      return rest;
+    },
+    fromFirestore(
+      snapshot: QueryDocumentSnapshot,
+      options: SnapshotOptions
+    ): T {
+      const data = snapshot.data(options);
+
+      // 🔹 Convertir fechas de Timestamp a Date
+      data.id = snapshot.id;
+      data.date = (data.date as Timestamp)?.toDate();
+      data.createdAt = (data.createdAt as Timestamp)?.toDate();
+      data.updatedAt = (data.updatedAt as Timestamp)?.toDate();
+
+      return data as T;
+    },
+  };
+}
+
 export function createFirestoreCrudStore<
-  T extends { id: string },
+  T extends { id: string; date?: Date | Timestamp | Dayjs } & IAudit,
   TFilters extends Record<string, any> = {}
 >(
   storeId: string,
@@ -45,6 +79,9 @@ export function createFirestoreCrudStore<
 ) {
   return defineStore(storeId, () => {
     const db = useFirestore();
+    const converter = createConverter<T>();
+    const colRef = collection(db, collectionPath).withConverter(converter);
+
     const items = ref<T[]>([]);
     const loading = ref(false);
 
@@ -58,6 +95,8 @@ export function createFirestoreCrudStore<
       cursors: [],
     });
 
+    let unsubscribe: (() => void) | null = null;
+
     /** 🔹 Construir query con filtros + sort */
     const buildQuery = (extra: QueryConstraint[] = [], withLimit = true) => {
       const constraints: QueryConstraint[] = [];
@@ -69,96 +108,98 @@ export function createFirestoreCrudStore<
         }
       });
 
-      // orden principal + desempate por id de documento
+      // orden
       constraints.push(orderBy(sort.value.sortBy, sort.value.sortDir));
-      constraints.push(orderBy(documentId(), "asc"));
 
+      // paginación
       if (withLimit) {
         constraints.push(limit(pagination.value.pageSize));
       }
-
       constraints.push(...extra);
 
-      return query(collection(db, collectionPath), ...constraints);
+      return query(colRef, ...constraints);
     };
 
-    /** 🔹 Cargar una página (sin tiempo real) */
-    const loadPage = async (extra: QueryConstraint[] = []) => {
-      loading.value = true;
-      const q = buildQuery(extra, true);
-      const snap = await getDocs(q);
-
-      items.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
-
-      const first = snap.docs[0];
-      const last = snap.docs[snap.docs.length - 1];
-
-      if (first && last) {
-        pagination.value.cursors[pagination.value.currentPageIndex] = {
-          first,
-          last,
-        };
-      }
-
-      loading.value = false;
-    };
-
-    /** 🔹 Total (count server-side, sin limit) */
+    /** 🔹 Obtener total (sin limit) */
     const fetchTotal = async () => {
-      const q = buildQuery([], false); // sin limit()
+      const q = buildQuery([], false); // sin limit
       const snapshot = await getCountFromServer(q);
       pagination.value.total = snapshot.data().count;
     };
 
+    /** 🔹 Suscribirse en tiempo real */
+    const subscribe = async (extra: QueryConstraint[] = []) => {
+      loading.value = true;
+      if (unsubscribe) unsubscribe();
+
+      const q = buildQuery(extra);
+
+      unsubscribe = onSnapshot(q, (snap) => {
+        items.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
+
+        // guardar primer y último cursor de la página actual
+        if (snap.docs.length > 0) {
+          pagination.value.cursors[pagination.value.currentPageIndex] = {
+            first: snap.docs[0] ?? null,
+            last: snap.docs[snap.docs.length - 1] ?? null,
+          };
+        }
+        loading.value = false;
+      });
+    };
+
+    onUnmounted(() => {
+      if (unsubscribe) unsubscribe();
+    });
+
     /** 🔹 CRUD básico */
     const add = async (data: Omit<T, "id">) => {
-      const refDoc = doc(collection(db, collectionPath));
+      const refDoc = doc(colRef);
       await setDoc(refDoc, data as DocumentData);
-      // opcional: recargar primera página
-      // await init();
+      return refDoc.id; // devolvemos el id
     };
 
     const update = async (id: string, data: Partial<T>) => {
-      await updateDoc(doc(db, collectionPath, id), data as DocumentData);
+      await updateDoc(doc(colRef, id), data as DocumentData);
     };
 
     const remove = async (id: string) => {
-      await deleteDoc(doc(db, collectionPath, id));
+      await deleteDoc(doc(colRef, id));
     };
 
     /** 🔹 Paginación */
     const nextPage = async () => {
-      const idx = pagination.value.currentPageIndex;
-      const cur = pagination.value.cursors[idx];
-      if (!cur || !cur.last) return;
-
-      // si ya estamos en la última página, no avanzar
-      const totalPages = Math.max(
-        1,
+      if (
+        pagination.value.currentPageIndex + 1 >=
         Math.ceil(pagination.value.total / pagination.value.pageSize)
-      );
-      if (idx + 1 >= totalPages) return;
+      )
+        return;
+
+      const current =
+        pagination.value.cursors[pagination.value.currentPageIndex];
+      if (!current?.last) return;
 
       pagination.value.currentPageIndex++;
-      await loadPage([startAfter(cur.last)]);
+      await subscribe([startAfter(current.last)]);
     };
 
     const prevPage = async () => {
-      const idx = pagination.value.currentPageIndex;
-      if (idx === 0) return;
+      if (pagination.value.currentPageIndex === 0) return;
 
-      const targetIdx = idx - 1;
-      const target = pagination.value.cursors[targetIdx];
+      pagination.value.currentPageIndex--;
+      const prev = pagination.value.cursors[pagination.value.currentPageIndex];
+      if (!prev?.first) return;
 
-      pagination.value.currentPageIndex = targetIdx;
+      await subscribe([startAt(prev.first)]);
+    };
 
-      // si tenemos el cursor de la página objetivo, anclamos con startAt(first)
-      if (target?.first) {
-        await loadPage([startAt(target.first)]);
-      } else {
-        // fallback: recargar sin cursor (inicio con filtros/orden actuales)
-        await loadPage();
-      }
+    /** 🔹 Cambiar tamaño de página */
+    const setPageSize = async (size: number) => {
+      pagination.value.pageSize = size;
+      pagination.value.currentPageIndex = 0;
+      pagination.value.cursors = [];
+      await fetchTotal();
+      await subscribe();
     };
 
     /** 🔹 API pública */
@@ -167,28 +208,19 @@ export function createFirestoreCrudStore<
       pagination.value.currentPageIndex = 0;
       pagination.value.cursors = [];
       await fetchTotal();
-      await loadPage();
+      await subscribe();
     };
 
-    const setSort = async (field: string, dir: "asc" | "desc") => {
+    const setSort = (field: string, dir: "asc" | "desc") => {
       sort.value = { sortBy: field, sortDir: dir };
       pagination.value.currentPageIndex = 0;
       pagination.value.cursors = [];
-      await fetchTotal();
-      await loadPage();
-    };
-
-    const setPageSize = async (size: number) => {
-      pagination.value.pageSize = size;
-      pagination.value.currentPageIndex = 0;
-      pagination.value.cursors = [];
-      await fetchTotal();
-      await loadPage();
+      subscribe();
     };
 
     const init = async () => {
       await fetchTotal();
-      await loadPage();
+      await subscribe();
     };
 
     return {
@@ -200,12 +232,12 @@ export function createFirestoreCrudStore<
       init,
       setFilters,
       setSort,
+      setPageSize,
       add,
       update,
       remove,
       nextPage,
       prevPage,
-      setPageSize,
     };
   });
 }
