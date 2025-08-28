@@ -108,7 +108,6 @@ const handleOk = () => {
         }
         notificationSuccess(`Se añadió`);
         emit("onClose");
-        router.go(0);
       } catch (error: any) {
         modalError(error.message);
       } finally {

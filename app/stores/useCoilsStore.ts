@@ -1,15 +1,15 @@
 // stores/useCoils.ts
 import { createFirestoreCrudStore } from "~/composables/useFirestoreCrudStore";
-import type { EStatusCoil } from "~/enums";
+import { EStatusCoil } from "~/enums";
 import type { ICoil } from "~/models/coil";
 
-export interface CoilFilters {
-  status?: string | EStatusCoil | "all";
+export interface ICoilFilters {
+  status?: EStatusCoil | "all";
 }
 
-export const useCoilsStore = createFirestoreCrudStore<ICoil, CoilFilters>(
+export const useCoilsStore = createFirestoreCrudStore<ICoil, ICoilFilters>(
   "coils",
   "coils",
-  { status: "all" },
+  { status: EStatusCoil.process },
   { sortBy: "date", sortDir: "desc" }
 );

@@ -8,34 +8,19 @@ import type { ICoil } from "~/models/coil";
 
 const dayjs = useDayjs();
 const coilsStore = useCoilsStore();
-const route = useRoute();
 
 const userFilter = ref<string>("");
-const loading = ref(false);
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
-// 🔹 Estado local de filtros (vinculado a URL)
-const localFilters = reactive({
-  status: (route.query.status as string) || "all",
+const { init } = useSyncQueryWithStore(coilsStore, {
+  filters: { status: "" },
 });
 
-async function applyFilters() {
-  loading.value = true;
-  await coilsStore.setFilters({
-    status: localFilters.status,
-  });
-  loading.value = false;
-}
-
-// const { init } = useSyncQueryWithStore(coilsStore, {
-//   filters: { status: "" },
-// });
-
 onMounted(async () => {
-  // await init();
+  await init();
   await coilsStore.init();
 });
 
@@ -49,6 +34,13 @@ const handleNext = async () => {
 
 const handlePageSizeChange = async (size: SelectValue) => {
   await coilsStore.setPageSize(size as number);
+};
+
+// 🔹 Métodos de interacción
+const handleApplyFilters = async (val: any) => {
+  await coilsStore.setFilters({
+    status: val,
+  });
 };
 
 function handleTableChange(_: any, __: any, sorter: any) {
@@ -102,8 +94,8 @@ const columns: TableProps["columns"] = [
     dataIndex: "date",
     width: "120px",
     align: "center",
-    defaultSortOrder: "descend",
-    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    sorter: true,
+    // sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
       return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
@@ -112,8 +104,8 @@ const columns: TableProps["columns"] = [
     title: "SERIE",
     key: "serie",
     dataIndex: "serie",
-    sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+    // sorter: (a: any, b: any) =>
+    //   (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
     customRender: ({ value, record }) => {
       return `${value} ${record.isCutting ? " | Cortado" : ""}`;
     },
@@ -183,8 +175,8 @@ const columns: TableProps["columns"] = [
     <!-- FILTROS -->
     <a-space>
       <a-select
-        v-model:value="localFilters.status"
-        @change="applyFilters"
+        v-model:value="coilsStore.filters.status"
+        @change="handleApplyFilters"
         style="width: 120px"
       >
         <a-select-option value="all">Todos</a-select-option>
@@ -198,9 +190,8 @@ const columns: TableProps["columns"] = [
 
       <a-input-search
         v-model:value="userFilter"
-        placeholder="Filtrar por usuario"
+        placeholder="Filtrar por serie"
         style="width: 200px"
-        @search="applyFilters"
       />
     </a-space>
 
@@ -214,6 +205,7 @@ const columns: TableProps["columns"] = [
       :pagination="false"
       :scroll="{ x: 1100 }"
       bordered
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
@@ -296,6 +288,27 @@ const columns: TableProps["columns"] = [
       </div>
     </div>
 
-    <pre>{{ JSON.stringify(coilsStore.items, null, 2) }}</pre>
+    <NewCoilModal
+      v-if="open && coil"
+      :coil="coil"
+      :open="open"
+      @on-close="open = false"
+    />
+
+    <NewCuttingModal
+      v-if="openCuttingPlan && coil"
+      :coil="coil"
+      :open="openCuttingPlan"
+      @on-close="openCuttingPlan = false"
+    />
+
+    <CoilInfoModal
+      v-if="openInfoCoil && coil"
+      :coil="coil"
+      :open="openInfoCoil"
+      @on-close="openInfoCoil = false"
+    />
+
+    <!-- <pre>{{ JSON.stringify(coilsStore.items, null, 2) }}</pre> -->
   </div>
 </template>

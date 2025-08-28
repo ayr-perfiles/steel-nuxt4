@@ -5,13 +5,11 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  getDocs,
   getCountFromServer,
   orderBy,
   where,
   query,
   startAfter,
-  endBefore,
   limit,
   onSnapshot,
   type DocumentData,
@@ -29,21 +27,26 @@ import { useFirestore } from "vuefire";
 import type { IAudit } from "~/models/audit";
 import type { Dayjs } from "dayjs";
 
-interface PaginationState {
+export interface PaginationState {
   pageSize: number;
   currentPageIndex: number;
   total: number;
   cursors: { first: DocumentSnapshot | null; last: DocumentSnapshot | null }[];
 }
 
-interface SortState {
+export interface SortState {
   sortBy: string;
   sortDir: "asc" | "desc";
 }
 
+interface ICreateConverter extends IAudit {
+  id: string;
+  date?: Date | Timestamp | Dayjs;
+}
+
 /** 🔹 Converter genérico */
 function createConverter<
-  T extends { id: string; date?: Date | Timestamp | Dayjs } & IAudit
+  T extends ICreateConverter & IAudit
 >(): FirestoreDataConverter<T> {
   return {
     toFirestore(modelObject: WithFieldValue<T>): DocumentData {
@@ -69,7 +72,7 @@ function createConverter<
 }
 
 export function createFirestoreCrudStore<
-  T extends { id: string; date?: Date | Timestamp | Dayjs } & IAudit,
+  T extends ICreateConverter,
   TFilters extends Record<string, any> = {}
 >(
   storeId: string,
@@ -135,7 +138,7 @@ export function createFirestoreCrudStore<
       const q = buildQuery(extra);
 
       unsubscribe = onSnapshot(q, (snap) => {
-        items.value = snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
+        items.value = snap.docs.map((d) => d.data());
 
         // guardar primer y último cursor de la página actual
         if (snap.docs.length > 0) {
@@ -211,11 +214,11 @@ export function createFirestoreCrudStore<
       await subscribe();
     };
 
-    const setSort = (field: string, dir: "asc" | "desc") => {
+    const setSort = async (field: string, dir: "asc" | "desc") => {
       sort.value = { sortBy: field, sortDir: dir };
       pagination.value.currentPageIndex = 0;
       pagination.value.cursors = [];
-      subscribe();
+      await subscribe();
     };
 
     const init = async () => {

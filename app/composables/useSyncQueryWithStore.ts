@@ -20,6 +20,7 @@ export function useSyncQueryWithStore<
     pagination: PaginationState;
     setFilters: (f: Partial<TFilters>) => Promise<void> | void;
     setSort: (field: string, dir: "asc" | "desc") => void;
+    setPageSize: (size: number) => Promise<void>;
     nextPage: () => Promise<void> | void;
     prevPage: () => Promise<void> | void;
   }
@@ -49,15 +50,20 @@ export function useSyncQueryWithStore<
       store.setSort(q.sortBy as string, q.sortDir as "asc" | "desc");
     }
 
-    // Página
-    if (q.page) {
-      const page = parseInt(q.page as string);
-      if (page > 1) {
-        for (let i = 1; i < page; i++) {
-          await store.nextPage();
-        }
-      }
+    // Orden
+    if (q.pageSize) {
+      store.setPageSize(parseInt(q.pageSize as string));
     }
+
+    // // Página
+    // if (q.page) {
+    //   const page = parseInt(q.page as string);
+    //   if (page > 1) {
+    //     for (let i = 1; i < page; i++) {
+    //       await store.nextPage();
+    //     }
+    //   }
+    // }
 
     if (options.onInit) {
       await options.onInit(q);
@@ -68,7 +74,8 @@ export function useSyncQueryWithStore<
   watch(
     () => ({
       ...store.filters,
-      page: store.pagination.currentPageIndex + 1,
+      // page: store.pagination.currentPageIndex + 1,
+      pageSize: store.pagination.pageSize,
       sortBy: store.sort.sortBy,
       sortDir: store.sort.sortDir,
     }),
