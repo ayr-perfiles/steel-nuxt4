@@ -1,7 +1,7 @@
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { movementConverter } from "~/models/movement";
 
-export const useCrudMovements = () => {
+export const useMovements = () => {
   const dbClient = useFirestore();
   const movementRef = collection(dbClient, "movements").withConverter(
     movementConverter
@@ -21,10 +21,10 @@ export const useCrudMovements = () => {
       if (!detail) return;
 
       movements.push({
-        ...mov,
+        date: mov.date,
         origin: mov.rollingId ? "rolling" : "voucher",
         quantity: detail.quantity,
-        description: detail.productId + " " + detail.description,
+        description: detail.description,
       });
     });
 

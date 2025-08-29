@@ -1,33 +1,60 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import type { TableProps } from "ant-design-vue";
+import type { SelectValue } from "ant-design-vue/es/select";
+import { useSyncQueryWithStore } from "~/composables/useSyncQueryWithStore";
+import { EStatusCoil } from "~/enums";
 import _ from "lodash";
 import type { ICoil } from "~/models/coil";
 
-interface Coil {
-  id: string;
-  name: string;
-  stock: number;
-}
-
-const emit = defineEmits<{
-  onSelected: [coil: Coil];
-}>();
-
 const dayjs = useDayjs();
+const coilsStore = useCoilsStore();
 
+const userFilter = ref<string>("");
 const open = ref(false);
 const openCuttingPlan = ref(false);
 const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
-const { data: coils, pending, remove } = useCrudCoils();
+const { init } = useSyncQueryWithStore(coilsStore, {
+  filters: { status: EStatusCoil.completed as string },
+});
+
+onMounted(async () => {
+  await init();
+  await coilsStore.init();
+});
+
+const handlePrev = async () => {
+  await coilsStore.prevPage();
+};
+
+const handleNext = async () => {
+  await coilsStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await coilsStore.setPageSize(size as number);
+};
+
+// 🔹 Métodos de interacción
+const handleApplyFilters = async (val: any) => {
+  await coilsStore.setFilters({
+    status: val,
+  });
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  coilsStore.setSort(sorter.field, direction);
+}
 
 const handleRemove = (id: string) => {
   Modal.confirm({
     title: "Eliminar Bobina?",
     onOk: async () => {
       try {
-        await remove(id);
+        // await remove(id);
         notificationSuccess("Bobina eliminado");
       } catch (error: any) {
         modalError(error.message);
@@ -67,8 +94,8 @@ const columns: TableProps["columns"] = [
     dataIndex: "date",
     width: "120px",
     align: "center",
-    defaultSortOrder: "descend",
-    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    sorter: true,
+    // sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
     customRender: ({ value }) => {
       return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
@@ -77,8 +104,8 @@ const columns: TableProps["columns"] = [
     title: "SERIE",
     key: "serie",
     dataIndex: "serie",
-    sorter: (a: any, b: any) =>
-      (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
+    // sorter: (a: any, b: any) =>
+    //   (a.name as string).charCodeAt(0) - (b.name as string).charCodeAt(0),
     customRender: ({ value, record }) => {
       return `${value} ${record.isCutting ? " | Cortado" : ""}`;
     },
@@ -145,13 +172,40 @@ const columns: TableProps["columns"] = [
 
 <template>
   <div>
+    <!-- FILTROS -->
+    <a-space>
+      <a-select
+        v-model:value="coilsStore.filters.status"
+        @change="handleApplyFilters"
+        style="width: 120px"
+      >
+        <a-select-option value="all">Todos</a-select-option>
+        <a-select-option :value="EStatusCoil.completed"
+          >Completados</a-select-option
+        >
+        <a-select-option :value="EStatusCoil.process"
+          >Pendientes</a-select-option
+        >
+      </a-select>
+
+      <a-input-search
+        v-model:value="userFilter"
+        placeholder="Filtrar por serie"
+        style="width: 200px"
+      />
+    </a-space>
+
+    <a-divider />
+
     <a-table
+      rowKey="id"
       :columns="columns"
-      :data-source="coils"
-      :loading="pending"
+      :data-source="coilsStore.items"
+      :loading="coilsStore.loading"
       :pagination="false"
       :scroll="{ x: 1100 }"
       bordered
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
@@ -195,6 +249,52 @@ const columns: TableProps["columns"] = [
       </template>
     </a-table>
 
+    <!-- 📌 Controles -->
+    <!-- <div class="py-4">
+      <div class="flex justify-center">
+        <a-space>
+          <span>Filas por pagina: </span>
+          <a-select
+            v-model:value="coilsStore.pagination.pageSize"
+            style="width: 60px"
+            @change="handlePageSizeChange"
+          >
+            <a-select-option :value="2">2</a-select-option>
+            <a-select-option :value="4">4</a-select-option>
+            <a-select-option :value="6">6</a-select-option>
+          </a-select>
+
+          <span>
+            Página {{ coilsStore.pagination.currentPageIndex + 1 }} de
+            {{
+              Math.max(
+                1,
+                Math.ceil(
+                  coilsStore.pagination.total / coilsStore.pagination.pageSize
+                )
+              )
+            }}
+            (Total: {{ coilsStore.pagination.total }} elementos)
+          </span>
+
+          <a-button type="link" @click="handlePrev">
+            <template #icon><arrow-left-outlined /> </template>
+          </a-button>
+
+          <a-button type="link" @click="handleNext">
+            <template #icon><arrow-right-outlined /> </template>
+          </a-button>
+        </a-space>
+      </div>
+    </div> -->
+
+    <pagination-controls
+      :pagination="coilsStore.pagination"
+      @update:pageSize="handlePageSizeChange"
+      @prev="handlePrev"
+      @next="handleNext"
+    />
+
     <NewCoilModal
       v-if="open && coil"
       :coil="coil"
@@ -215,5 +315,7 @@ const columns: TableProps["columns"] = [
       :open="openInfoCoil"
       @on-close="openInfoCoil = false"
     />
+
+    <!-- <pre>{{ JSON.stringify(coilsStore.items, null, 2) }}</pre> -->
   </div>
 </template>

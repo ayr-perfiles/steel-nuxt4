@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
+import type { SelectValue } from "ant-design-vue/es/select";
 import _ from "lodash";
 import type { IStrip } from "~/models/strip";
 
@@ -14,12 +15,45 @@ const emit = defineEmits<{
 }>();
 
 const dayjs = useDayjs();
+const stripStore = useStripsStore();
 
 const openRolling = ref(false);
 const openRollings = ref(false);
 const strip = ref<IStrip>();
 
-const { data: strips, pending } = useCrudStrips();
+const { init } = useSyncQueryWithStore(stripStore, {
+  filters: {},
+});
+
+onMounted(async () => {
+  await init();
+  await stripStore.init();
+});
+
+const handlePrev = async () => {
+  await stripStore.prevPage();
+};
+
+const handleNext = async () => {
+  await stripStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await stripStore.setPageSize(size as number);
+};
+
+// 🔹 Métodos de interacción
+const handleApplyFilters = async (val: any) => {
+  await stripStore.setFilters({
+    status: val,
+  });
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  stripStore.setSort(sorter.field, direction);
+}
 
 const handleOpenRolling = (stripSelected: any) => {
   openRolling.value = true;
@@ -29,6 +63,13 @@ const handleOpenRolling = (stripSelected: any) => {
 const handleOpenMovements = (stripSelected: any) => {
   openRollings.value = true;
   strip.value = stripSelected;
+};
+
+// algolia
+const { result, search } = useAlgoliaSearch("strips");
+
+const handleSearch = async (term: string) => {
+  await search({ query: term });
 };
 
 const columns: TableProps["columns"] = [
@@ -47,8 +88,7 @@ const columns: TableProps["columns"] = [
     dataIndex: "date",
     width: "120px",
     align: "center",
-    defaultSortOrder: "descend",
-    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    sorter: true,
     customRender: ({ value }) => {
       return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
@@ -156,13 +196,25 @@ const columns: TableProps["columns"] = [
 
 <template>
   <div>
+    <div class="flex justify-between items-center mb-4">
+      <a-input-search
+        placeholder="Buscar bobina, producto..."
+        style="width: 300px"
+        allowClear
+        @search="handleSearch"
+      />
+    </div>
+
+    <!-- <pre>{{ JSON.stringify(result, null, 2) }}</pre> -->
+
     <a-table
       :columns="columns"
-      :data-source="strips"
-      :loading="pending"
+      :data-source="stripStore.items"
+      :loading="stripStore.loading"
       :pagination="false"
       :scroll="{ x: 1100 }"
       bordered
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, text, record, value }">
         <template v-if="column.dataIndex === 'stock'">
@@ -208,6 +260,13 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <pagination-controls
+      :pagination="stripStore.pagination"
+      @update:pageSize="handlePageSizeChange"
+      @prev="handlePrev"
+      @next="handleNext"
+    />
 
     <RollingsModal
       v-if="openRollings && strip"

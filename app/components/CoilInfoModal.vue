@@ -13,7 +13,8 @@ defineEmits<{
   onClose: [];
 }>();
 
-const { data: strips } = useCrudStrips(props.coil.id);
+const stripStore = useStripsStore();
+const stripsByCoilId = await stripStore.getByField("coil.id", props.coil.id);
 
 const columns: TableProps["columns"] = [
   {
@@ -74,7 +75,8 @@ const columns: TableProps["columns"] = [
   >
     <template #title>
       <a-tag color="green">
-        <template #icon>
+        <template #icon
+          >2str
           <InfoCircleOutlined />
         </template>
 
@@ -85,7 +87,7 @@ const columns: TableProps["columns"] = [
     <a-card>
       <a-table
         :columns="columns"
-        :data-source="strips"
+        :data-source="stripsByCoilId"
         :pagination="false"
         bordered
       >

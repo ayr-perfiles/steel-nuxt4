@@ -21,7 +21,7 @@ export const customerConverter = {
     return {
       identity: customer.identity,
       businessEntity: customer.businessEntity,
-      address: customer.address,
+      address: customer.address || null,
       createdAt: customer.createdAt,
       updatedAt: customer.updatedAt || null,
     };

@@ -17,6 +17,8 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const router = useRouter();
+
 const dayjs = useDayjs();
 
 const loading = ref(false);
@@ -145,7 +147,7 @@ const disabledDate = (current: Dayjs) => {
 
     <a-form ref="formRef" :model="formState" :rules="rules" v-bind="layout">
       <a-card>
-        <a-form-item label="Fecha" name="serie">
+        <a-form-item label="Fecha" name="date">
           <a-date-picker
             v-model:value="formState.date as Dayjs"
             format="DD-MM-YYYY HH:mm:ss"

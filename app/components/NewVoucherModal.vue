@@ -112,13 +112,14 @@ const handleOk = () => {
 
         unReactiveForm.date = (unReactiveForm.date as Dayjs).toDate();
         unReactiveForm.total = totals.value.totalBorrow;
-        unReactiveForm.details = objDetails;
+        (unReactiveForm.productIds = objDetails.map(
+          (detail: any) => detail.productId
+        )),
+          (unReactiveForm.details = objDetails);
         unReactiveForm.customer = {
           id: unReactiveForm.customer?.id || "",
           businessEntity: unReactiveForm.customer?.businessEntity || "",
         };
-
-        console.log("unReactiveForm", unReactiveForm);
 
         if (props.voucher) {
           await updateVoucher(props.voucher.id, unReactiveForm as IVoucher);
@@ -257,6 +258,7 @@ const columns: TableProps["columns"] = [
     :confirm-loading="loading"
     class="w-full"
     wrap-class-name="full-modal"
+    destroy-on-close
     @cancel="$emit('onClose')"
     @ok="handleOk"
   >
