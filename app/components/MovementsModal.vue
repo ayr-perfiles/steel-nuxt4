@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import _ from "lodash";
 import type { TableProps } from "ant-design-vue";
-import type { IMovement } from "~/models/movement";
 import type { IProduct } from "~/models/product";
+import type { SelectValue } from "ant-design-vue/es/select";
 
 interface Props {
   open: boolean;
@@ -11,23 +11,50 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const emit = defineEmits<{
+defineEmits<{
   onClose: [];
 }>();
 
 const dayjs = useDayjs();
-const movements = ref<IMovement[]>([]);
+const movementStore = useMovementStore();
 
-const { getMovementsByProductId } = useCrudMovements();
+const movementsDTO = computed(() =>
+  movementStore.items.map((mov) => {
+    const detail = mov.details.find((d) => d.productId === props.product.id);
+    return {
+      ...mov,
+      origin: mov.rollingId ? "rolling" : "voucher",
+      quantity: detail?.quantity || 0,
+      description: detail?.description || "-",
+    };
+  })
+);
 
 onMounted(async () => {
-  try {
-    const data = await getMovementsByProductId(props.product.id);
-    movements.value = data;
-  } catch (error) {
-    modalError(error);
-  }
+  await movementStore.init();
+
+  movementStore.setFilters({
+    productIds: { op: "array-contains", value: props.product.id },
+  });
 });
+
+const handlePrev = async () => {
+  await movementStore.prevPage();
+};
+
+const handleNext = async () => {
+  await movementStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await movementStore.setPageSize(size as number);
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  movementStore.setSort(sorter.field, direction);
+}
 
 const columns: TableProps["columns"] = [
   {
@@ -42,14 +69,15 @@ const columns: TableProps["columns"] = [
 
   {
     title: "FECHA",
-    key: "date",
-    dataIndex: "date",
+    key: "createdAt",
+    dataIndex: "createdAt",
     width: "120px",
     align: "center",
     defaultSortOrder: "descend",
-    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    sorter: (a: any, b: any) =>
+      dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
     customRender: ({ value }) => {
-      return dayjs(value).format("DD/MM/YYYY HH:mm");
+      return dayjs(value).format("DD/MM/YYYY HH:mm:ss");
     },
   },
   {
@@ -98,32 +126,30 @@ const columns: TableProps["columns"] = [
     <a-card>
       <a-table
         :columns="columns"
-        :data-source="movements"
+        :data-source="movementsDTO"
         :pagination="false"
         :scroll="{ x: 1100 }"
         bordered
+        @change="handleTableChange"
       >
-        <template #title>
-          <a-typography-title :level="5">
-            {{ product.name }}
-          </a-typography-title>
-        </template>
-
         <template #bodyCell="{ column, text, record, value }">
           <template v-if="column.dataIndex === 'stock'">
             <a-tag v-if="text">{{ text }}</a-tag>
             <span v-else>-</span>
           </template>
-
-          <!-- <template v-else-if="column.key === 'action'">
-            <a-button type="link" danger> Eliminar </a-button>
-          </template> -->
         </template>
       </a-table>
+
+      <pagination-controls
+        :pagination="movementStore.pagination"
+        @update:pageSize="handlePageSizeChange"
+        @prev="handlePrev"
+        @next="handleNext"
+      />
     </a-card>
 
     <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
-    <!-- <pre>{{ JSON.stringify(items, null, 2) }}</pre> -->
+    <!-- <pre>{{ JSON.stringify(movementStore.items, null, 2) }}</pre> -->
   </a-modal>
 </template>
 

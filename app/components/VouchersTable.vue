@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
+import type { SelectValue } from "ant-design-vue/es/select";
 import _ from "lodash";
 import type { IVoucher } from "~/models/voucher";
 
@@ -14,11 +15,45 @@ const emit = defineEmits<{
 }>();
 
 const dayjs = useDayjs();
+const voucherStore = useVouchersStore();
+const { remove } = useCrudVouchers();
 
 const open = ref(false);
 const voucher = ref<IVoucher>();
 
-const { data: vouchers, pending, remove } = useCrudVouchers();
+const { init } = useSyncQueryWithStore(voucherStore, {
+  filters: {},
+});
+
+onMounted(async () => {
+  await init();
+  await voucherStore.init();
+});
+
+const handlePrev = async () => {
+  await voucherStore.prevPage();
+};
+
+const handleNext = async () => {
+  await voucherStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await voucherStore.setPageSize(size as number);
+};
+
+// 🔹 Métodos de interacción
+const handleApplyFilters = async (val: any) => {
+  await voucherStore.setFilters({
+    status: val,
+  });
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  voucherStore.setSort(sorter.field, direction);
+}
 
 const handleRemove = (id: string) => {
   Modal.confirm({
@@ -59,8 +94,7 @@ const columns: TableProps["columns"] = [
     dataIndex: "date",
     width: "120px",
     align: "center",
-    defaultSortOrder: "descend",
-    sorter: (a: any, b: any) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    sorter: true,
     customRender: ({ value }) => {
       return dayjs(value).format("DD/MM/YYYY HH:mm");
     },
@@ -105,11 +139,12 @@ const columns: TableProps["columns"] = [
   <div>
     <a-table
       :columns="columns"
-      :data-source="vouchers"
-      :loading="pending"
+      :data-source="voucherStore.items"
+      :loading="voucherStore.loading"
       :pagination="false"
       :scroll="{ x: 1100 }"
       bordered
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, text, record }">
         <template v-if="column.dataIndex === 'stock'">
@@ -147,6 +182,13 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <pagination-controls
+      :pagination="voucherStore.pagination"
+      @update:pageSize="handlePageSizeChange"
+      @prev="handlePrev"
+      @next="handleNext"
+    />
 
     <NewVoucherModal
       v-if="open"

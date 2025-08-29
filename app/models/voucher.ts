@@ -24,6 +24,7 @@ export interface IVoucher extends IAudit {
   customer: ICustomerVoucher;
   description: string;
   total: number;
+  productIds: string[];
   details: IDetailVoucher[];
   userId: string;
 }
@@ -42,6 +43,7 @@ export const voucherConverter = {
       customer: voucher.customer,
       description: voucher.description || null,
       total: voucher.total,
+      productIds: voucher.productIds,
       details: voucher.details,
       userId: voucher.userId || null,
       createdAt: voucher.createdAt,

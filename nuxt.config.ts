@@ -13,7 +13,19 @@ export default defineNuxtConfig({
     "dayjs-nuxt",
     "nuxt-vuefire",
     "@pinia/nuxt",
+    "@nuxtjs/algolia",
   ],
+
+  runtimeConfig: {
+    public: {
+      algoliaAppId: process.env.NUXT_ALGOLIA_APP_ID,
+      algoliaSearchKey: process.env.NUXT_ALGOLIA_SEARCH_KEY, // search-only
+    },
+  },
+  algolia: {
+    applicationId: process.env.NUXT_ALGOLIA_APP_ID,
+    apiKey: process.env.NUXT_ALGOLIA_SEARCH_KEY,
+  },
 
   vuefire: {
     auth: {

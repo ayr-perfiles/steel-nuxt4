@@ -28,7 +28,6 @@
 
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
-import { setGlobalOptions } from "firebase-functions";
 import {
   onDocumentCreated,
   onDocumentDeleted,
@@ -170,7 +169,7 @@ exports.onRollingRemoved = onDocumentDeleted(
     const details = [
       {
         productId: stripData.product.id,
-        quantity: rollingData.quantity,
+        quantity: -rollingData.quantity,
         description: `Movimiento generado al eliminar el rollo ${rollingId} del strip ${stripData.id}`,
       },
     ];
@@ -254,7 +253,7 @@ exports.onVoucherCreated = onDocumentCreated(
       date: voucherData.date,
       voucherId: voucherId,
       userId: voucherData.userId || "sistema",
-      productIds: voucherData.details.map((detail: any) => detail.productId),
+      productIds: voucherData.productIds,
       details: details,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
@@ -308,7 +307,7 @@ exports.onVoucherRemoved = onDocumentDeleted(
       date: voucherData.date,
       voucherId: voucherId,
       userId: voucherData.userId || "sistema",
-      productIds: voucherData.details.map((detail: any) => detail.productId),
+      productIds: voucherData.productIds,
       details: details,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
@@ -336,4 +335,36 @@ exports.onVoucherRemoved = onDocumentDeleted(
   }
 );
 
-setGlobalOptions({ maxInstances: 10 });
+// const ALGOLIA_APP_ID = "3Y16MMA19D";
+// const ALGOLIA_ADMIN_KEY = "2b7c8350a9436fb67d3086049a577229";
+// const ALGOLIA_INDEX_NAME = "strips";
+
+// const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
+// const index = client.(ALGOLIA_INDEX_NAME);
+
+// exports.syncToAlgolia = onDocumentWritten(
+//   {
+//     document: "strips/{stripId}", // Tu colección
+//     concurrency: 10,
+//     cpu: 1,
+//     memory: "256MiB",
+//   },
+//   async (event) => {
+//     const { params, data } = event;
+//     const stripId = params.stripId;
+
+//     if (!data?.after?.exists) {
+//       console.log(`Eliminando ${stripId} de Algolia`);
+//       await index.deleteObject(stripId);
+//       return;
+//     }
+
+//     const newData = data.after.data();
+//     if (!newData) return;
+
+//     newData.objectID = stripId;
+//     await index.saveObject(newData);
+//   }
+// );
+
+// setGlobalOptions({ maxInstances: 10 });

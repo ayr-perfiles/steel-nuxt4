@@ -16,7 +16,7 @@ const openInfoCoil = ref(false);
 const coil = ref<ICoil>();
 
 const { init } = useSyncQueryWithStore(coilsStore, {
-  filters: { status: "" },
+  filters: { status: EStatusCoil.completed as string },
 });
 
 onMounted(async () => {
@@ -250,7 +250,7 @@ const columns: TableProps["columns"] = [
     </a-table>
 
     <!-- 📌 Controles -->
-    <div class="py-4">
+    <!-- <div class="py-4">
       <div class="flex justify-center">
         <a-space>
           <span>Filas por pagina: </span>
@@ -286,7 +286,14 @@ const columns: TableProps["columns"] = [
           </a-button>
         </a-space>
       </div>
-    </div>
+    </div> -->
+
+    <pagination-controls
+      :pagination="coilsStore.pagination"
+      @update:pageSize="handlePageSizeChange"
+      @prev="handlePrev"
+      @next="handleNext"
+    />
 
     <NewCoilModal
       v-if="open && coil"

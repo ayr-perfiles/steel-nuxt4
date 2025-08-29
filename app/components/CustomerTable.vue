@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
+import type { SelectValue } from "ant-design-vue/es/select";
 import _ from "lodash";
 import type { ICustomer } from "~/models/customer";
 
@@ -14,13 +15,42 @@ const emit = defineEmits<{
 }>();
 
 const dayjs = useDayjs();
+const customerStore = useCustomerStore();
 
 const open = ref(false);
-const openCuttingPlan = ref(false);
-const openRolling = ref(false);
 const customer = ref<ICustomer>();
 
-const { data: customers, pending, remove } = useCrudCustomers();
+const { init } = useSyncQueryWithStore(customerStore, {
+  filters: {},
+});
+
+onMounted(async () => {
+  await init();
+  await customerStore.init();
+});
+
+const handlePrev = async () => {
+  await customerStore.prevPage();
+};
+
+const handleNext = async () => {
+  await customerStore.nextPage();
+};
+
+const handlePageSizeChange = async (size: SelectValue) => {
+  await customerStore.setPageSize(size as number);
+};
+
+// 🔹 Métodos de interacción
+const handleApplyFilters = async (val: any) => {
+  await customerStore.setFilters({});
+};
+
+function handleTableChange(_: any, __: any, sorter: any) {
+  if (!sorter || !sorter.field) return;
+  const direction = sorter.order === "ascend" ? "asc" : "desc";
+  customerStore.setSort(sorter.field, direction);
+}
 
 const handleRemove = (id: string) => {
   // try {
@@ -39,24 +69,6 @@ const handleRemove = (id: string) => {
 const handleUpdate = (customerSelected: any) => {
   open.value = true;
   customer.value = customerSelected;
-};
-
-const handleOpenCuttingPlan = (customerSelected: any) => {
-  openCuttingPlan.value = true;
-  customer.value = customerSelected;
-};
-
-const handleOpenRolling = (customerSelected: any) => {
-  openRolling.value = true;
-  customer.value = customerSelected;
-};
-
-const handleSelected = (customer: any) => {
-  emit("onSelected", {
-    id: customer.id,
-    name: customer.name,
-    stock: customer.stock,
-  });
 };
 
 const columns: TableProps["columns"] = [
@@ -80,6 +92,7 @@ const columns: TableProps["columns"] = [
     title: "RAZÓN SOCIAL",
     key: "businessEntity",
     dataIndex: "businessEntity",
+    sorter: true,
   },
   {
     title: "",
@@ -94,11 +107,12 @@ const columns: TableProps["columns"] = [
   <div>
     <a-table
       :columns="columns"
-      :data-source="customers"
-      :loading="pending"
+      :data-source="customerStore.items"
+      :loading="customerStore.loading"
       :pagination="false"
       :scroll="{ x: 1100 }"
       bordered
+      @change="handleTableChange"
     >
       <template #bodyCell="{ column, text, record }">
         <template v-if="column.dataIndex === 'stock'">
@@ -128,5 +142,12 @@ const columns: TableProps["columns"] = [
         </template>
       </template>
     </a-table>
+
+    <pagination-controls
+      :pagination="customerStore.pagination"
+      @update:pageSize="handlePageSizeChange"
+      @prev="handlePrev"
+      @next="handleNext"
+    />
   </div>
 </template>

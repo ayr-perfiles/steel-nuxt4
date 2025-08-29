@@ -21,10 +21,10 @@ export const useCrudMovements = () => {
       if (!detail) return;
 
       movements.push({
-        date: mov.date,
+        ...mov,
         origin: mov.rollingId ? "rolling" : "voucher",
         quantity: detail.quantity,
-        description: detail.description,
+        description: detail.productId + " " + detail.description,
       });
     });
 

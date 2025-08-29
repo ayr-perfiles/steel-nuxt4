@@ -21,6 +21,8 @@ import {
   type SnapshotOptions,
   type WithFieldValue,
   Timestamp,
+  type WhereFilterOp,
+  getDocs,
 } from "firebase/firestore";
 import { ref, onUnmounted } from "vue";
 import { useFirestore } from "vuefire";
@@ -42,6 +44,23 @@ export interface SortState {
 interface ICreateConverter extends IAudit {
   id: string;
   date?: Date | Timestamp | Dayjs;
+}
+
+// 1) Tipos para filtros dinámicos
+function isBlank(v: unknown) {
+  return v === undefined || v === null || v === "" || v === "all";
+}
+
+type Primitive = string | number | boolean | Date | Timestamp | Dayjs;
+interface OperatorFilter {
+  op: WhereFilterOp;
+  value: unknown;
+}
+
+function isOperatorFilter(v: unknown): v is OperatorFilter {
+  return (
+    !!v && typeof v === "object" && "op" in (v as any) && "value" in (v as any)
+  );
 }
 
 /** 🔹 Converter genérico */
@@ -92,7 +111,7 @@ export function createFirestoreCrudStore<
     const sort = ref<SortState>({ ...defaultSort });
 
     const pagination = ref<PaginationState>({
-      pageSize: 2,
+      pageSize: 10,
       currentPageIndex: 0,
       total: 0,
       cursors: [],
@@ -101,23 +120,52 @@ export function createFirestoreCrudStore<
     let unsubscribe: (() => void) | null = null;
 
     /** 🔹 Construir query con filtros + sort */
+    // const buildQuery = (extra: QueryConstraint[] = [], withLimit = true) => {
+    //   const constraints: QueryConstraint[] = [];
+
+    //   // filtros dinámicos
+    //   Object.entries(filters.value).forEach(([key, val]) => {
+    //     if (val !== undefined && val !== "" && val !== "all") {
+    //       constraints.push(where(key, "==", val));
+    //     }
+    //   });
+
+    //   // orden
+    //   constraints.push(orderBy(sort.value.sortBy, sort.value.sortDir));
+
+    //   // paginación
+    //   if (withLimit) {
+    //     constraints.push(limit(pagination.value.pageSize));
+    //   }
+    //   constraints.push(...extra);
+
+    //   return query(colRef, ...constraints);
+    // };
+
+    // 3) buildQuery robusto
     const buildQuery = (extra: QueryConstraint[] = [], withLimit = true) => {
       const constraints: QueryConstraint[] = [];
 
-      // filtros dinámicos
-      Object.entries(filters.value).forEach(([key, val]) => {
-        if (val !== undefined && val !== "" && val !== "all") {
-          constraints.push(where(key, "==", val));
-        }
-      });
+      for (const [key, raw] of Object.entries(
+        filters.value as Record<
+          string,
+          Primitive | OperatorFilter | null | undefined
+        >
+      )) {
+        if (isBlank(raw)) continue;
 
-      // orden
+        if (isOperatorFilter(raw)) {
+          if (isBlank(raw.value)) continue; // ← evita where con value = ''
+          constraints.push(where(key, raw.op, raw.value as any));
+        } else {
+          constraints.push(where(key, "==", raw as any));
+        }
+      }
+
+      // Orden
       constraints.push(orderBy(sort.value.sortBy, sort.value.sortDir));
 
-      // paginación
-      if (withLimit) {
-        constraints.push(limit(pagination.value.pageSize));
-      }
+      if (withLimit) constraints.push(limit(pagination.value.pageSize));
       constraints.push(...extra);
 
       return query(colRef, ...constraints);
@@ -221,6 +269,27 @@ export function createFirestoreCrudStore<
       await subscribe();
     };
 
+    /** 🔹 Obtener documentos por campo (incluyendo campos anidados / Map) */
+    const getByField = async (
+      fieldPath: string, // permite 'datos.nombre' o 'config.activo'
+      value: Primitive,
+      matchMode: "equals" | "startsWith" = "equals"
+    ): Promise<T[]> => {
+      const constraints: QueryConstraint[] = [];
+
+      if (matchMode === "equals") {
+        constraints.push(where(fieldPath, "==", value));
+      } else if (matchMode === "startsWith") {
+        const val = (value as string).toLowerCase();
+        constraints.push(where(fieldPath, ">=", val));
+        constraints.push(where(fieldPath, "<", val + "\uf8ff"));
+      }
+
+      const q = query(colRef, ...constraints);
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => d.data());
+    };
+
     const init = async () => {
       await fetchTotal();
       await subscribe();
@@ -241,6 +310,7 @@ export function createFirestoreCrudStore<
       remove,
       nextPage,
       prevPage,
+      getByField,
     };
   });
 }

@@ -72,7 +72,7 @@ const disabledDate = (current: Dayjs) => {
       <a-form v-bind="layout">
         <a-form-item label="Fecha" name="date">
           <a-date-picker
-            v-model:value="formState.date as Dayjs"
+            v-model:value="formState.date"
             format="DD-MM-YYYY HH:mm:ss"
             :disabled-date="disabledDate"
             :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"

@@ -112,13 +112,14 @@ const handleOk = () => {
 
         unReactiveForm.date = (unReactiveForm.date as Dayjs).toDate();
         unReactiveForm.total = totals.value.totalBorrow;
-        unReactiveForm.details = objDetails;
+        (unReactiveForm.productIds = objDetails.map(
+          (detail: any) => detail.productId
+        )),
+          (unReactiveForm.details = objDetails);
         unReactiveForm.customer = {
           id: unReactiveForm.customer?.id || "",
           businessEntity: unReactiveForm.customer?.businessEntity || "",
         };
-
-        console.log("unReactiveForm", unReactiveForm);
 
         if (props.voucher) {
           await updateVoucher(props.voucher.id, unReactiveForm as IVoucher);
