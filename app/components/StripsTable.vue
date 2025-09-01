@@ -1,8 +1,13 @@
 <script lang="ts" setup>
 import type { TableProps } from "ant-design-vue";
 import type { SelectValue } from "ant-design-vue/es/select";
-import _ from "lodash";
+import _, { get } from "lodash";
 import type { IStrip } from "~/models/strip";
+import type { DefaultOptionType } from "ant-design-vue/es/select";
+import type {
+  LabelInValueType,
+  RawValueType,
+} from "ant-design-vue/es/vc-select/Select";
 
 interface Strip {
   id: string;
@@ -28,6 +33,10 @@ const { init } = useSyncQueryWithStore(stripStore, {
 onMounted(async () => {
   await init();
   await stripStore.init();
+});
+
+onUnmounted(() => {
+  stripStore.reset();
 });
 
 const handlePrev = async () => {
@@ -68,8 +77,35 @@ const handleOpenMovements = (stripSelected: any) => {
 // algolia
 const { result, search } = useAlgoliaSearch("strips");
 
+// estado local para las opciones
+const options = ref<{ label: string; value: string }[]>([]);
+const fetching = ref(false);
+
+// 🔹 Buscar sugerencias en Algolia
 const handleSearch = async (term: string) => {
+  if (!term) {
+    options.value = [];
+    return;
+  }
+
+  fetching.value = true;
+
   await search({ query: term });
+
+  options.value = result.value.hits.map((hit: any) => ({
+    label: hit.coil.serie + " | " + hit.coil.weight + " | " + hit.product.name, // 👈 cambia según tu schema
+    value: hit.objectID,
+  }));
+
+  fetching.value = false;
+};
+
+// 🔹 Cuando seleccionas un item del select
+const handleSelect = async (
+  option: RawValueType | LabelInValueType,
+  _option: DefaultOptionType
+) => {
+  await stripStore.getById((option as LabelInValueType).value as string);
 };
 
 const columns: TableProps["columns"] = [
@@ -172,7 +208,7 @@ const columns: TableProps["columns"] = [
   //   width: "120px",
   //   align: "center",
   //   // customRender: ({ value }) => {
-  //   //   return currency(value, "");
+  //   //   script currency(value, "");
   //   // },
   // },
   // {
@@ -197,19 +233,36 @@ const columns: TableProps["columns"] = [
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <a-input-search
-        placeholder="Buscar bobina, producto..."
+      <!-- 🔹 SELECT para buscar -->
+      <a-select
+        show-search
+        label-in-value
+        :filter-option="false"
+        :options="options"
+        :loading="fetching"
         style="width: 300px"
-        allowClear
+        placeholder="Buscar serie, peso o nombre de producto..."
+        allow-clear
         @search="handleSearch"
+        @select="handleSelect"
+        @change="(val) => !val && stripStore.getById('')"
       />
+
+      <a-button type="primary">
+        <template #icon>
+          <FilterFilled />
+        </template>
+        Filtrar
+      </a-button>
     </div>
 
-    <!-- <pre>{{ JSON.stringify(result, null, 2) }}</pre> -->
+    <a-divider />
 
     <a-table
       :columns="columns"
-      :data-source="stripStore.items"
+      :data-source="
+        stripStore.selectedItem ? [stripStore.selectedItem] : stripStore.items
+      "
       :loading="stripStore.loading"
       :pagination="false"
       :scroll="{ x: 1100 }"

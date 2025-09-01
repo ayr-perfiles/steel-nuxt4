@@ -2,6 +2,7 @@
 import { type ICoil } from "~/models/coil";
 import _ from "lodash";
 import type { TableProps } from "ant-design-vue";
+import type { IStrip } from "~/models/strip";
 
 interface Props {
   open: boolean;
@@ -14,7 +15,24 @@ defineEmits<{
 }>();
 
 const stripStore = useStripsStore();
-const stripsByCoilId = await stripStore.getByField("coil.id", props.coil.id);
+
+const loading = ref(false);
+const stripsByCoilId = ref<IStrip[]>([]);
+
+onMounted(async () => {
+  try {
+    loading.value = true;
+    stripsByCoilId.value = await stripStore.getByField(
+      "coil.id",
+      props.coil.id
+    );
+  } catch (error) {
+    console.error(error);
+    modalError("Error al cargar los rolados");
+  } finally {
+    loading.value = false;
+  }
+});
 
 const columns: TableProps["columns"] = [
   {
@@ -90,6 +108,7 @@ const columns: TableProps["columns"] = [
         :data-source="stripsByCoilId"
         :pagination="false"
         bordered
+        :loading="loading"
       >
         <template #title>
           <span class="font-semibold">Plan de corte</span>

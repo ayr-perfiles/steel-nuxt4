@@ -15,7 +15,10 @@ const emit = defineEmits<{
   onClose: [];
 }>();
 
+const rollingStore = useRollingStore();
 const dayjs = useDayjs();
+
+const loading = ref(false);
 const rollings = ref<IRolling[]>([]);
 
 const { getRollingsByStripId, remove: removeRolling } = useCrudRollings();
@@ -45,12 +48,24 @@ const handleRemove = async (id: string) => {
 
 onMounted(async () => {
   try {
-    const data = await getRollingsByStripId(props.strip.id);
-    rollings.value = data;
+    loading.value = true;
+    rollings.value = await rollingStore.getByField("stripId", props.strip.id);
   } catch (error) {
-    modalError(error);
+    modalError("Error al cargar los rolados");
+    console.error(error);
+  } finally {
+    loading.value = false;
   }
 });
+
+// onMounted(async () => {
+//   try {
+//     const data = await getRollingsByStripId(props.strip.id);
+//     rollings.value = data;
+//   } catch (error) {
+//     modalError(error);
+//   }
+// });
 
 const columns: TableProps["columns"] = [
   {
@@ -116,6 +131,7 @@ const columns: TableProps["columns"] = [
         :pagination="false"
         :scroll="{ x: 1100 }"
         bordered
+        :loading="loading"
       >
         <template #title>
           <a-typography-title :level="5">

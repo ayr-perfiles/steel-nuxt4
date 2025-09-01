@@ -31,7 +31,7 @@ export default defineNuxtConfig({
     auth: {
       enabled: false,
     },
-    emulators: true,
+    emulators: false,
     config: {
       apiKey: "AIzaSyDI8o8O7jOP2LlxeXcrVXVJM1DdkQHPhHo",
       authDomain: "steel-f5208.firebaseapp.com",
