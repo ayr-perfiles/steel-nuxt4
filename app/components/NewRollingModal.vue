@@ -21,7 +21,19 @@ const dayjs = useDayjs();
 const loading = ref(false);
 const formState = reactive<Partial<IRolling>>({
   date: dayjs(),
-  stripId: props.strip.id,
+  strip: {
+    id: props.strip.id,
+    coil: {
+      id: props.strip.coil.id,
+      serie: props.strip.coil.serie,
+      weight: props.strip.coil.weight,
+    },
+    product: {
+      id: props.strip.product.id,
+      name: props.strip.product.name,
+      width: props.strip.product.width,
+    },
+  },
 });
 
 const { add: addRolling } = useCrudRollings();
@@ -72,7 +84,7 @@ const disabledDate = (current: Dayjs) => {
       <a-form v-bind="layout">
         <a-form-item label="Fecha" name="date">
           <a-date-picker
-            v-model:value="formState.date"
+            v-model:value="formState.date as Dayjs"
             format="DD-MM-YYYY HH:mm:ss"
             :disabled-date="disabledDate"
             :show-time="{ defaultValue: dayjs('00:00:00', 'HH:mm:ss') }"
