@@ -11,6 +11,8 @@ import { coilConverter } from "~/models/coil";
 export const useReportCoils = () => {
   const dbClient = useFirestore();
 
+  const loading = ref(false);
+
   const reportInformation = ref({
     totalCoils: 0,
     totalCuttingCoils: 0,
@@ -25,32 +27,40 @@ export const useReportCoils = () => {
   ).withConverter(coilConverter);
 
   const updateReport = async () => {
-    const snapshot = getAggregateFromServer(coilsRef, {
-      countOfDoc: count(),
-      totalWeight: sum("weight"),
-      totalValue: sum("total"),
-    });
+    try {
+      loading.value = true;
+      const snapshot = getAggregateFromServer(coilsRef, {
+        countOfDoc: count(),
+        totalWeight: sum("weight"),
+        totalValue: sum("total"),
+      });
 
-    const snapshotCutting = getAggregateFromServer(coilsCuttingRef, {
-      countOfDoc: count(),
-    });
+      const snapshotCutting = getAggregateFromServer(coilsCuttingRef, {
+        countOfDoc: count(),
+      });
 
-    await Promise.all([snapshot, snapshotCutting]);
+      await Promise.all([snapshot, snapshotCutting]);
 
-    reportInformation.value.totalCoils = (await snapshot).data().countOfDoc;
-    reportInformation.value.totalWeight = parseFloat(
-      ((await snapshot).data().totalWeight || 0).toFixed(2)
-    );
-    reportInformation.value.totalValue = parseFloat(
-      ((await snapshot).data().totalValue || 0).toFixed(2)
-    );
-    reportInformation.value.totalCuttingCoils = (
-      await snapshotCutting
-    ).data().countOfDoc;
+      reportInformation.value.totalCoils = (await snapshot).data().countOfDoc;
+      reportInformation.value.totalWeight = parseFloat(
+        ((await snapshot).data().totalWeight || 0).toFixed(2)
+      );
+      reportInformation.value.totalValue = parseFloat(
+        ((await snapshot).data().totalValue || 0).toFixed(2)
+      );
+      reportInformation.value.totalCuttingCoils = (
+        await snapshotCutting
+      ).data().countOfDoc;
+    } catch (error) {
+      console.error("Error updating report:", error);
+    } finally {
+      loading.value = false;
+    }
   };
 
   return {
     updateReport,
     reportInformation,
+    loading,
   };
 };

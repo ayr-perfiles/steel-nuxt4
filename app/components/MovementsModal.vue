@@ -3,6 +3,7 @@ import _ from "lodash";
 import type { TableProps } from "ant-design-vue";
 import type { IProduct } from "~/models/product";
 import type { SelectValue } from "ant-design-vue/es/select";
+import type { IMovement } from "~/models/movement";
 
 interface Props {
   open: boolean;
@@ -18,8 +19,27 @@ defineEmits<{
 const dayjs = useDayjs();
 const movementStore = useMovementStore();
 
+const loading = ref(false);
+const movementsByProductId = ref<IMovement[]>([]);
+
+onMounted(async () => {
+  try {
+    loading.value = true;
+    movementsByProductId.value = await movementStore.getByField(
+      "productIds",
+      props.product.id,
+      "array-contains"
+    );
+  } catch (error) {
+    modalError("Error al cargar los movimientos");
+    console.error(error);
+  } finally {
+    loading.value = false;
+  }
+});
+
 const movementsDTO = computed(() =>
-  movementStore.items.map((mov) => {
+  movementsByProductId.value.map((mov) => {
     const detail = mov.details.find((d) => d.productId === props.product.id);
     return {
       ...mov,
@@ -29,14 +49,6 @@ const movementsDTO = computed(() =>
     };
   })
 );
-
-onMounted(async () => {
-  await movementStore.init();
-
-  movementStore.setFilters({
-    productIds: { op: "array-contains", value: props.product.id },
-  });
-});
 
 const handlePrev = async () => {
   await movementStore.prevPage();
@@ -113,6 +125,7 @@ const columns: TableProps["columns"] = [
     :open="open"
     :mask-closable="false"
     class="w-full"
+    destroy-on-close
     wrap-class-name="full-modal"
     :footer="null"
     @cancel="$emit('onClose')"
@@ -129,6 +142,7 @@ const columns: TableProps["columns"] = [
         :data-source="movementsDTO"
         :pagination="false"
         :scroll="{ x: 1100 }"
+        :loading="loading"
         bordered
         @change="handleTableChange"
       >
@@ -148,7 +162,10 @@ const columns: TableProps["columns"] = [
       />
     </a-card>
 
-    <!-- <pre>{{ JSON.stringify(formState, null, 2) }}</pre> -->
+    <!-- <p v-for="item in movementsByProductId" :key="item.id">{{ item.id }}</p> -->
+    <!-- <p>{{ movementsDTO.length }}</p> -->
+
+    <!-- <pre>{{ JSON.stringify(movementsByProductId, null, 2) }}</pre> -->
     <!-- <pre>{{ JSON.stringify(movementStore.items, null, 2) }}</pre> -->
   </a-modal>
 </template>

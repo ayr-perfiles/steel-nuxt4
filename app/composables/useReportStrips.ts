@@ -1,17 +1,16 @@
 import {
   collection,
-  count,
   getAggregateFromServer,
   query,
   sum,
   where,
 } from "firebase/firestore";
-import { productConverter } from "~/models/product";
 import { stripConverter } from "~/models/strip";
 
 export const useReportStrips = () => {
   const dbClient = useFirestore();
   const { data: products } = useCrudProducts();
+  const loading = ref(true);
 
   interface IReportInformation {
     productName: string;
@@ -29,27 +28,34 @@ export const useReportStrips = () => {
   );
 
   const updateReport = async () => {
-    const newReportInformation: IReportInformation[] = [];
+    try {
+      loading.value = true;
+      const newReportInformation: IReportInformation[] = [];
 
-    for (const product of products.value) {
-      const q = query(stripsRef, where("product.id", "==", product.id));
+      for (const product of products.value) {
+        const q = query(stripsRef, where("product.id", "==", product.id));
 
-      const totalStripsSnapshot = await getAggregateFromServer(q, {
-        totalStrips: sum("quantity"),
-        totalStripsAvailable: sum("quantityAvailable"),
-        totalWeight: sum("weightStrips"),
-      });
+        const totalStripsSnapshot = await getAggregateFromServer(q, {
+          totalStrips: sum("quantity"),
+          totalStripsAvailable: sum("quantityAvailable"),
+          totalWeight: sum("weightStrips"),
+        });
 
-      newReportInformation.push({
-        productName: product.name,
-        totalStrips: totalStripsSnapshot.data().totalStrips || 0,
-        totalStripsAvailable:
-          totalStripsSnapshot.data().totalStripsAvailable || 0,
-        totalWeight: totalStripsSnapshot.data().totalWeight || 0,
-      });
+        newReportInformation.push({
+          productName: product.name,
+          totalStrips: totalStripsSnapshot.data().totalStrips || 0,
+          totalStripsAvailable:
+            totalStripsSnapshot.data().totalStripsAvailable || 0,
+          totalWeight: totalStripsSnapshot.data().totalWeight || 0,
+        });
+      }
+
+      reportInformation.value = newReportInformation;
+    } catch (error) {
+      console.error("Error updating report:", error);
+    } finally {
+      loading.value = false;
     }
-
-    reportInformation.value = newReportInformation;
   };
 
   watchEffect(() => {
@@ -61,5 +67,6 @@ export const useReportStrips = () => {
   return {
     updateReport,
     reportInformation,
+    loading,
   };
 };

@@ -5,8 +5,15 @@ definePageMeta({
   name: "Dashboard",
 });
 
-const { updateReport, reportInformation } = useReportCoils();
-const { reportInformation: reportInformationStrips } = useReportStrips();
+const {
+  updateReport,
+  reportInformation,
+  loading: loadingReportCoils,
+} = useReportCoils();
+const {
+  reportInformation: reportInformationStrips,
+  loading: loadingInformationStrips,
+} = useReportStrips();
 
 onMounted(() => {
   updateReport();
@@ -109,44 +116,54 @@ const columns: TableProps["columns"] = [
         <h1 class="text-2xl font-bold col-span-full text-center">
           Reporte de Bobinas
         </h1>
-        <div
-          class="p-4 rounded-lg shadow-md bg-blue-100 flex flex-col items-center"
-        >
-          <span class="text-sm font-medium text-blue-700">Total Bobinas</span>
-          <span class="text-2xl font-bold text-blue-900">
-            {{ reportInformation.totalCoils }}
-          </span>
-        </div>
-        <div
-          class="p-4 rounded-lg shadow-md bg-green-100 flex flex-col items-center"
-        >
-          <span class="text-sm font-medium text-green-700"
-            >Total Bobinas Cortadas</span
-          >
-          <span class="text-2xl font-bold text-green-900">
-            {{ reportInformation.totalCuttingCoils }}
-          </span>
-        </div>
 
         <div
-          class="p-4 rounded-lg shadow-md bg-red-100 flex flex-col items-center"
+          v-if="loadingReportCoils"
+          class="text-2xl col-span-full text-center"
         >
-          <span class="text-sm font-medium text-yellow-700"
-            >Total peso [kg]</span
-          >
-          <span class="text-2xl font-bold text-yellow-900">
-            {{ reportInformation.totalWeight }}
-          </span>
+          <a-spin></a-spin>
         </div>
 
-        <div
-          class="p-4 rounded-lg shadow-md bg-yellow-100 flex flex-col items-center"
-        >
-          <span class="text-sm font-medium text-yellow-700">Total [S/]</span>
-          <span class="text-2xl font-bold text-yellow-900">
-            {{ currency(reportInformation.totalValue, "") }}
-          </span>
-        </div>
+        <template v-else>
+          <div
+            class="p-4 rounded-lg shadow-md bg-blue-100 flex flex-col items-center"
+          >
+            <span class="text-sm font-medium text-blue-700">Total Bobinas</span>
+            <span class="text-2xl font-bold text-blue-900">
+              {{ reportInformation.totalCoils }}
+            </span>
+          </div>
+          <div
+            class="p-4 rounded-lg shadow-md bg-green-100 flex flex-col items-center"
+          >
+            <span class="text-sm font-medium text-green-700"
+              >Total Bobinas Cortadas</span
+            >
+            <span class="text-2xl font-bold text-green-900">
+              {{ reportInformation.totalCuttingCoils }}
+            </span>
+          </div>
+
+          <div
+            class="p-4 rounded-lg shadow-md bg-red-100 flex flex-col items-center"
+          >
+            <span class="text-sm font-medium text-yellow-700"
+              >Total peso [kg]</span
+            >
+            <span class="text-2xl font-bold text-yellow-900">
+              {{ reportInformation.totalWeight }}
+            </span>
+          </div>
+
+          <div
+            class="p-4 rounded-lg shadow-md bg-yellow-100 flex flex-col items-center"
+          >
+            <span class="text-sm font-medium text-yellow-700">Total [S/]</span>
+            <span class="text-2xl font-bold text-yellow-900">
+              {{ currency(reportInformation.totalValue, "") }}
+            </span>
+          </div>
+        </template>
       </div>
 
       <a-divider class="col-span-full my-10" />
@@ -162,6 +179,7 @@ const columns: TableProps["columns"] = [
         :pagination="false"
         :scroll="{ x: 1100 }"
         bordered
+        :loading="loadingInformationStrips"
       >
       </a-table>
 

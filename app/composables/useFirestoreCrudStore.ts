@@ -23,6 +23,7 @@ import {
   Timestamp,
   type WhereFilterOp,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { ref, onUnmounted } from "vue";
 import { useFirestore } from "vuefire";
@@ -105,6 +106,8 @@ export function createFirestoreCrudStore<
     const colRef = collection(db, collectionPath).withConverter(converter);
 
     const items = ref<T[]>([]);
+    // 👇 nuevo: doc seleccionado
+    const selectedItem = ref<T | null>(null);
     const loading = ref(false);
 
     const filters = ref<TFilters>({ ...defaultFilters });
@@ -118,6 +121,7 @@ export function createFirestoreCrudStore<
     });
 
     let unsubscribe: (() => void) | null = null;
+    let unsubscribeDoc: (() => void) | null = null;
 
     /** 🔹 Construir query con filtros + sort */
     // const buildQuery = (extra: QueryConstraint[] = [], withLimit = true) => {
@@ -200,6 +204,7 @@ export function createFirestoreCrudStore<
     };
 
     onUnmounted(() => {
+      if (unsubscribeDoc) unsubscribeDoc();
       if (unsubscribe) unsubscribe();
     });
 
@@ -270,19 +275,41 @@ export function createFirestoreCrudStore<
     };
 
     /** 🔹 Obtener documentos por campo (incluyendo campos anidados / Map) */
+    type MatchMode =
+      | "equals"
+      | "startsWith"
+      | "array-contains"
+      | "array-contains-any"
+      | "in";
+
     const getByField = async (
-      fieldPath: string, // permite 'datos.nombre' o 'config.activo'
-      value: Primitive,
-      matchMode: "equals" | "startsWith" = "equals"
+      fieldPath: string,
+      value: Primitive | Primitive[],
+      matchMode: MatchMode = "equals"
     ): Promise<T[]> => {
       const constraints: QueryConstraint[] = [];
 
-      if (matchMode === "equals") {
-        constraints.push(where(fieldPath, "==", value));
-      } else if (matchMode === "startsWith") {
-        const val = (value as string).toLowerCase();
-        constraints.push(where(fieldPath, ">=", val));
-        constraints.push(where(fieldPath, "<", val + "\uf8ff"));
+      switch (matchMode) {
+        case "equals":
+          constraints.push(where(fieldPath, "==", value));
+          break;
+        case "startsWith": {
+          const val = (value as string).toLowerCase();
+          constraints.push(where(fieldPath, ">=", val));
+          constraints.push(where(fieldPath, "<", val + "\uf8ff"));
+          break;
+        }
+        case "array-contains":
+          constraints.push(where(fieldPath, "array-contains", value));
+          break;
+        case "array-contains-any":
+          constraints.push(
+            where(fieldPath, "array-contains-any", value as Primitive[])
+          );
+          break;
+        case "in":
+          constraints.push(where(fieldPath, "in", value as Primitive[]));
+          break;
       }
 
       const q = query(colRef, ...constraints);
@@ -290,13 +317,68 @@ export function createFirestoreCrudStore<
       return snap.docs.map((d) => d.data());
     };
 
+    /** 🔹 Obtener un documento por ID (y enlazar a selectedItem) */
+    const getById = (id: string): Promise<T | null> => {
+      // limpiar subs previas
+      if (unsubscribeDoc) unsubscribeDoc();
+      if (!id || id.trim() === "") {
+        selectedItem.value = null;
+        return Promise.resolve(null);
+      }
+
+      const refDoc = doc(colRef, id);
+
+      return new Promise<T | null>((resolve) => {
+        unsubscribeDoc = onSnapshot(refDoc, (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as T;
+
+            // mantener en selectedItem
+            selectedItem.value = data;
+
+            // opcional: reflejar también en items
+            // const idx = items.value.findIndex((i) => i.id === id);
+            // if (idx >= 0) items.value[idx] = data;
+            // else items.value.push(data);
+
+            resolve(data);
+          } else {
+            selectedItem.value = null;
+            resolve(null);
+          }
+        });
+      });
+    };
+
     const init = async () => {
+      await fetchTotal();
+      await subscribe();
+    };
+
+    const reset = async () => {
+      // 🔹 restaurar filtros
+      filters.value = { ...defaultFilters };
+
+      // 🔹 restaurar sort
+      sort.value = { ...defaultSort };
+
+      // 🔹 restaurar paginación
+      pagination.value = {
+        pageSize: 10,
+        currentPageIndex: 0,
+        total: 0,
+        cursors: [],
+      };
+
+      selectedItem.value = null;
+
       await fetchTotal();
       await subscribe();
     };
 
     return {
       items,
+      selectedItem,
       filters,
       sort,
       pagination,
@@ -311,6 +393,8 @@ export function createFirestoreCrudStore<
       nextPage,
       prevPage,
       getByField,
+      getById,
+      reset,
     };
   });
 }
