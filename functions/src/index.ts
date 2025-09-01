@@ -49,7 +49,7 @@ exports.onRollingCreated = onDocumentCreated(
     }
 
     // gets
-    const stripRef = db.collection("strips").doc(rollingData.stripId);
+    const stripRef = db.collection("strips").doc(rollingData.strip.id);
     const stripData = await stripRef.get().then((doc) => {
       return { ...doc.data(), id: doc.id } as any;
     });
@@ -142,7 +142,7 @@ exports.onRollingRemoved = onDocumentDeleted(
     }
 
     // gets
-    const stripRef = db.collection("strips").doc(rollingData.stripId);
+    const stripRef = db.collection("strips").doc(rollingData.strip.id);
     const stripData = await stripRef.get().then((doc) => {
       return { ...doc.data(), id: doc.id } as any;
     });
@@ -334,37 +334,3 @@ exports.onVoucherRemoved = onDocumentDeleted(
     console.log("Transaction successfully committed!");
   }
 );
-
-// const ALGOLIA_APP_ID = "3Y16MMA19D";
-// const ALGOLIA_ADMIN_KEY = "2b7c8350a9436fb67d3086049a577229";
-// const ALGOLIA_INDEX_NAME = "strips";
-
-// const client = algoliasearch(ALGOLIA_APP_ID, ALGOLIA_ADMIN_KEY);
-// const index = client.(ALGOLIA_INDEX_NAME);
-
-// exports.syncToAlgolia = onDocumentWritten(
-//   {
-//     document: "strips/{stripId}", // Tu colección
-//     concurrency: 10,
-//     cpu: 1,
-//     memory: "256MiB",
-//   },
-//   async (event) => {
-//     const { params, data } = event;
-//     const stripId = params.stripId;
-
-//     if (!data?.after?.exists) {
-//       console.log(`Eliminando ${stripId} de Algolia`);
-//       await index.deleteObject(stripId);
-//       return;
-//     }
-
-//     const newData = data.after.data();
-//     if (!newData) return;
-
-//     newData.objectID = stripId;
-//     await index.saveObject(newData);
-//   }
-// );
-
-// setGlobalOptions({ maxInstances: 10 });

@@ -49,7 +49,7 @@ const handleRemove = async (id: string) => {
 onMounted(async () => {
   try {
     loading.value = true;
-    rollings.value = await rollingStore.getByField("stripId", props.strip.id);
+    rollings.value = await rollingStore.getByField("strip.id", props.strip.id);
   } catch (error) {
     modalError("Error al cargar los rolados");
     console.error(error);
